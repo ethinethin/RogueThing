@@ -1,6 +1,6 @@
 TARGET=nrl
 CC?=clang
-CFLAGS=-I./lib -Wall -Wextra -Wpedantic -lm -lcurses
+CFLAGS=-I./lib -Wall -Wextra -Wpedantic -lm -lncurses
 CFILES=./src/*.c
 
 default:
