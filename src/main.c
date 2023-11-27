@@ -14,7 +14,6 @@ int
 main(void)
 {
 	int c;
-	int cx, cy;
 	long int seed;
 	struct mapspace *map;
 	struct playerspace *player;
@@ -23,18 +22,12 @@ main(void)
 	seed = seed_rng();
 	printf("%ld\n", seed);	
 	/* make map */
-	map = init_mapspace(100, 25);
-	/* add room locations and paths */
-	add_rooms(map, 9);
-	make_paths(map);
-	/* make rooms and place */
-	make_rooms(map, 8, 5, 15, 8);
-	/* find character starting space */
-	char_start(map, &cx, &cy);
-	player = init_playerspace(cx, cy);
+	map = init_mapspace(100, 25, 0);
+	/* place the character on the entrance */
+	player = init_playerspace(map->begin[0], map->begin[1]);
 	init_curses();
 	/* input loop */
-	while ((c = getch()) != 'q' || c == 'Q') {
+	while ((c = getch()) != 'p' && c != 'P') {
 		check_vis(map, player->x, player->y);
 		print_mapspace(map);
 		draw_character(player->x, player->y);
@@ -43,9 +36,17 @@ main(void)
 		refresh();
 		usleep(8333);
 		switch (c) {
+			case 'q':
+			case 'Q':
+				move_player(map, player, -1, -1);
+				break;
 			case 'w':
 			case 'W':
 				move_player(map, player, 0, -1);
+				break;
+			case 'e':
+			case 'E':
+				move_player(map, player, 1, -1);
 				break;
 			case 'a':
 			case 'A':
@@ -58,6 +59,18 @@ main(void)
 			case 'd':
 			case 'D':
 				move_player(map, player, 1, 0);
+				break;
+			case 'z':
+			case 'Z':
+				move_player(map, player, -1, 1);
+				break;
+			case 'x':
+			case 'X':
+				move_player(map, player, 0, 0);
+				break;
+			case 'c':
+			case 'C':
+				move_player(map, player, 1, 1);
 				break;
 			case 'l':
 			case 'L':
@@ -92,7 +105,7 @@ look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy)
 	
 	x = cx;
 	y = cy;
-	while ((c = getch()) != 'l' || c == 'L') {
+	while ((c = getch()) != 'l' && c != 'L') {
 		print_mapspace(map);
 		draw_character(cx, cy);
 		draw_commands(1);
@@ -107,8 +120,18 @@ look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy)
 		refresh();
 		usleep(8333);
 		switch (c) {
+			case 'q':
+			case 'Q':
+				if (x > 0) x -= 1;
+				if (y > 0) y -= 1;
+				break;
 			case 'w':
 			case 'W':
+				if (y > 0) y -= 1;
+				break;
+			case 'e':
+			case 'E':
+				if (x < map->w - 1) x += 1;
 				if (y > 0) y -= 1;
 				break;
 			case 'a':
@@ -122,6 +145,19 @@ look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy)
 			case 'd':
 			case 'D':
 				if (x < map->w - 1) x += 1;
+				break;
+			case 'z':
+			case 'Z':
+				if (x > 0) x -= 1;
+				if (y < map->h - 1) y += 1;
+				break;
+			case 'x':
+			case 'X':
+				break;
+			case 'c':
+			case 'C':
+				if (x < map->w - 1) x += 1;
+				if (y < map->h - 1) y += 1;
 				break;
 		}
 	}

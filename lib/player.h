@@ -12,7 +12,7 @@ struct playerspace {
 };
 
 extern void			move_player(struct mapspace *map, struct playerspace *player, int x, int y);
-extern struct playerspace *	init_playerspace(int cx, int cy);
+extern struct playerspace *	init_playerspace(int x, int y);
 extern void			kill_playerspace(struct playerspace *player);
 
 #endif

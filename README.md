@@ -9,10 +9,24 @@ To compile and run:
     make
     ./nrl
 
+You may need to install ncurses - see: https://ftp.gnu.org/gnu/ncurses/
+
 # Controls
 
-WASD move the character
-'q' quits the game
+Move the character:
 
+WASD - move up/left/down/right
+
+QEZC - move diagonally
+
+S - wait
+
+L - enter look mode
+
+P - quit
+
+# Note
+
+Game is currently broken - character sometimes starts in a solid rock wall.
 
 

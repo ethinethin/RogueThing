@@ -8,13 +8,13 @@
 static void	rando_name(char name[18]);
 
 struct playerspace *
-init_playerspace(int cx, int cy)
+init_playerspace(int x, int y)
 {
 	struct playerspace *player;
 
 	player = malloc(sizeof(*player));
-	player->x = cx;
-	player->y = cy;
+	player->x = x;
+	player->y = y;
 	player->cur_floor = 0;
 	player->cur_time = 0;
 	rando_name(player->name);
@@ -36,7 +36,7 @@ move_player(struct mapspace *map, struct playerspace *player, int cx, int cy)
 	x = player->x + cx;
 	y = player->y + cy;
 	/* Make sure it is on the map */
-	if (x < 0 || y < 0 || x > map->w - 1 || y > map->h - 1) return;
+	if (x < 0 || x > map->w - 1 || y < 0 || y > map->h - 1) return;
 	/* If floor type is WALL, don't go changin' */
 	if (*(map->floorspace + xy2flat(x, y, 100)) == FLOOR_WALL) return;
 	/* Otherwise, make the change and increase the time */

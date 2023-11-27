@@ -5,15 +5,19 @@
 
 static double	distp(int x1, int y1, int x2, int y2);
 static void	check_distp(struct mapspace *map);
+static void	add_rooms(struct mapspace *map, int n_rooms);
+static void	make_paths(struct mapspace *map);
+static void	make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h);
 static void	make_path(struct mapspace *map, int room1, int room2);
 static int	check_paths(struct mapspace *map);
 static void	carve_room(struct mapspace *room);
 static void	place_room(struct mapspace *map, struct mapspace *room, int x, int y);
+static void	place_exits(struct mapspace *map);
 
-char *floor_names[5] = { "Open floor", "Stone wall", "Open path", "", "Door" };
+char *floor_names[7] = { "Open floor", "Stone wall", "Open path", "", "Door", "A staircase down", "A staircase up" };
 
 struct mapspace *
-init_mapspace(int w, int h)
+init_mapspace(int w, int h, int is_room)
 {
 	int i;
 	struct mapspace *map;
@@ -30,6 +34,14 @@ init_mapspace(int w, int h)
 	map->n_rooms = 0;
 	map->room_x = NULL;
 	map->room_y = NULL;
+	/* add room locations and paths */
+	if (is_room == 0) {
+		add_rooms(map, 9);
+		make_paths(map);
+		/* make rooms and place */
+		make_rooms(map, 8, 5, 15, 8);
+		place_exits(map);
+	}
 	return map;
 }
 
@@ -84,7 +96,7 @@ check_distp(struct mapspace *map)
 	}
 }
 
-void
+static void
 add_rooms(struct mapspace *map, int n_rooms)
 {
 	int i, x, y;
@@ -104,7 +116,7 @@ add_rooms(struct mapspace *map, int n_rooms)
 	check_distp(map);
 }
 
-void
+static void
 make_paths(struct mapspace *map)
 {
 	int i, j, r;
@@ -165,7 +177,7 @@ check_paths(struct mapspace *map)
 	return 0;
 }
 
-void
+static void
 make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h)
 {
 	int i, w, h;
@@ -174,7 +186,7 @@ make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h)
 	for (i = 0; i < map->n_rooms; i += 1) {
 		w = rand_num(min_w, max_w);
 		h = rand_num(min_h, max_h);
-		room = init_mapspace(w, h);
+		room = init_mapspace(w, h, 1);
 		carve_room(room);
 		place_room(map, room, *(map->room_x + i), *(map->room_y + i));
 		kill_mapspace(room);
@@ -228,19 +240,27 @@ place_room(struct mapspace *map, struct mapspace *room, int x, int y)
 	}		
 }
 
-void
-char_start(struct mapspace *map, int *cx, int *cy)
-{
-	while (1) {
-		*cx = rand_num(0, 99);
-		*cy = rand_num(0, 24);
-		if (*(map->floorspace + xy2flat(*cx, *cy, map->w)) == FLOOR_OPEN) break;
-	}
-
-}
-
 int
 xy2flat(int x, int y, int max_w)
 {
 	return y * max_w + x;
+}
+
+static void
+place_exits(struct mapspace *map)
+{
+	int x1, y1, x2, y2;
+
+	do {
+		x1 = rand_num(5, 94);
+		y1 = rand_num(2, 22);
+		x2 = rand_num(5, 94);
+		y2 = rand_num(2, 22);
+	} while (distp(x1, y1, x2, y2) < 50 && *(map->floorspace + xy2flat(x1, y1, map->w)) != FLOOR_OPEN && *(map->floorspace + xy2flat(x2, y2, map->w)) != FLOOR_OPEN);
+	map->begin[0] = x1;
+	map->begin[1] = y1;
+	map->end[0] = x2;
+	map->end[1] = y2;
+	*(map->floorspace + xy2flat(x1, y1, map->w)) = FLOOR_BEGIN;
+	*(map->floorspace + xy2flat(x2, y2, map->w)) = FLOOR_END;
 }

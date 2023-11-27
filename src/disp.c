@@ -10,7 +10,7 @@
 static void	check_window(void);
 static void	format_time(int cur_time, char time_f[20]);
 
-static char floor_sym[] = { '.', '#', '.', '*', 'O' };
+static char floor_sym[] = { '.', '#', '.', '*', 'O', 'v', '^' };
 
 void
 init_curses(void)
@@ -84,7 +84,7 @@ void
 draw_commands(int look)
 {
 	if (look == 0) {
-		mvprintw(27, 1, "[L] Look mode    [Q] Quit game");
+		mvprintw(27, 1, "[L] Look mode    [P] pQuit game");
 	} else {
 		mvprintw(27, 1, "[L] Exit Look mode                  ");
 	}
