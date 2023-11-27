@@ -27,6 +27,5 @@ P - quit
 
 # Note
 
-Game is currently broken - character sometimes starts in a solid rock wall.
-
+Game may enter a state where it cannot place stairs up/stairs down
 

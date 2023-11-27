@@ -256,7 +256,8 @@ place_exits(struct mapspace *map)
 		y1 = rand_num(2, 22);
 		x2 = rand_num(5, 94);
 		y2 = rand_num(2, 22);
-	} while (distp(x1, y1, x2, y2) < 50 && *(map->floorspace + xy2flat(x1, y1, map->w)) != FLOOR_OPEN && *(map->floorspace + xy2flat(x2, y2, map->w)) != FLOOR_OPEN);
+	} while (distp(x1, y1, x2, y2) < 50 || *(map->floorspace + xy2flat(x1, y1, map->w)) != FLOOR_OPEN || *(map->floorspace + xy2flat(x2, y2, map->w)) != FLOOR_OPEN);
+	printf("%lf\n", distp(x1, y1, x2, y2));
 	map->begin[0] = x1;
 	map->begin[1] = y1;
 	map->end[0] = x2;
