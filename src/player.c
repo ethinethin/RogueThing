@@ -5,6 +5,8 @@
 #include "player.h"
 #include "rand.h"
 
+#define TIME_TICK 10
+
 static void	rando_name(char name[18]);
 
 struct playerspace *
@@ -42,7 +44,7 @@ move_player(struct mapspace *map, struct playerspace *player, int cx, int cy)
 	/* Otherwise, make the change and increase the time */
 	player->x = x;
 	player->y = y;
-	player->cur_time += 10;
+	player->cur_time += TIME_TICK;
 }
 
 static void
@@ -64,3 +66,16 @@ rando_name(char name[18])
 	/* Make first letter uppercase */
 	name[0] -= 32;
 }	
+
+void
+move_floors(struct mapspace *map, struct playerspace *player, int z, int maxfloor)
+{
+	int floorspace;
+
+	floorspace = *(map->floorspace + xy2flat(player->x, player->y, map->w));
+	if ((z == 1 && floorspace == FLOOR_END && player->cur_floor < maxfloor - 1) ||
+	    (z == -1 && floorspace == FLOOR_BEGIN && player->cur_floor > 0)) {
+		player->cur_floor += z;
+		player->cur_time += TIME_TICK;
+	}
+}

@@ -57,7 +57,7 @@ print_mapspace(struct mapspace *map)
 
 	for (j = 0; j < map->h; j += 1) {
 		for (i = 0; i < map->w; i += 1) {
-			if (*(map->vis + xy2flat(i, j, map->w)) == 1) mvaddch(j + ADD_Y, i + ADD_X, floor_sym[*(map->floorspace + xy2flat(i, j, map->w))]);
+			if (*(map->explored + xy2flat(i, j, map->w)) == 1) mvaddch(j + ADD_Y, i + ADD_X, floor_sym[*(map->floorspace + xy2flat(i, j, map->w))]);
 		}
 	}
 }
@@ -109,6 +109,7 @@ draw_playerinfo(struct playerspace *player)
 	mvprintw(0, 1, "Name: %s", player->name);
 	format_time(player->cur_time, time_f);
 	mvprintw(0, 26, "Time: %s", time_f);
+	mvprintw(0, 46, "Floor: %d", player->cur_floor + 1);
 }
 
 static void

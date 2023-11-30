@@ -7,28 +7,39 @@
 #include "player.h"
 #include "rand.h"
 
-static void	check_vis(struct mapspace *map, int cx, int cy);
+static void	check_explored(struct mapspace *map, int cx, int cy);
 static void	look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy);
+
+#define NUM_MAPS 100
+struct mapspace **MAP_WALLET;
 
 int
 main(void)
 {
-	int c;
+	int c, i, prev_x, prev_y;
 	long int seed;
 	struct mapspace *map;
 	struct playerspace *player;
 
 	/* seed rng */
 	seed = seed_rng();
-	printf("%ld\n", seed);	
-	/* make map */
-	map = init_mapspace(100, 25, 0);
+	printf("%ld\n", seed);
+	/* make maps */
+	MAP_WALLET = malloc(sizeof(*MAP_WALLET) * NUM_MAPS);
+	prev_x = -1; prev_y = -1;
+	for (i = 0; i < NUM_MAPS; i += 1) {
+		*(MAP_WALLET + i) = init_mapspace(100, 25, 0, i, prev_x, prev_y);
+		prev_x = MAP_WALLET[i]->end[0];
+		prev_y = MAP_WALLET[i]->end[1];
+	}
+	map = *(MAP_WALLET + 0);
 	/* place the character on the entrance */
 	player = init_playerspace(map->begin[0], map->begin[1]);
 	init_curses();
 	/* input loop */
 	while ((c = getch()) != 'p' && c != 'P') {
-		check_vis(map, player->x, player->y);
+		erase();
+		check_explored(map, player->x, player->y);
 		print_mapspace(map);
 		draw_character(player->x, player->y);
 		draw_commands(0);
@@ -76,6 +87,14 @@ main(void)
 			case 'L':
 				look_cursor(map, player, player->x, player->y);
 				break;
+			case '<':
+				move_floors(map, player, 1, NUM_MAPS);
+				map = *(MAP_WALLET + player->cur_floor);
+				break;
+			case '>':
+				move_floors(map, player, -1, NUM_MAPS);
+				map = *(MAP_WALLET + player->cur_floor);
+				break;
 		}
 	}
 	kill_curses();
@@ -85,14 +104,14 @@ main(void)
 }
 
 static void
-check_vis(struct mapspace *map, int cx, int cy)
+check_explored(struct mapspace *map, int cx, int cy)
 {
 	int i, j;
 
 	for (j = cy - 2; j <= cy + 2; j += 1) {
 		for (i = cx - 4; i <= cx + 4; i += 1) {
 			if (i < 0 || j < 0 || i >= map->w - 1 || j >= map->h - 1) continue;
-			*(map->vis + xy2flat(i, j, map->w)) = 1;
+			*(map->explored + xy2flat(i, j, map->w)) = 1;
 		}
 	}
 }
@@ -115,7 +134,7 @@ look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy)
 		} else {
 			on_player = 0;
 		}
-		draw_look(*(map->floorspace + xy2flat(x, y, 100)), *(map->vis + xy2flat(x, y, 100)), on_player);
+		draw_look(*(map->floorspace + xy2flat(x, y, 100)), *(map->explored + xy2flat(x, y, 100)), on_player);
 		draw_cursor(x, y);
 		refresh();
 		usleep(8333);
