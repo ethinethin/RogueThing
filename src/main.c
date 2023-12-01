@@ -29,8 +29,8 @@ main(void)
 	prev_x = -1; prev_y = -1;
 	for (i = 0; i < NUM_MAPS; i += 1) {
 		*(MAP_WALLET + i) = init_mapspace(100, 25, 0, i, prev_x, prev_y);
-		prev_x = MAP_WALLET[i]->end[0];
-		prev_y = MAP_WALLET[i]->end[1];
+		prev_x = (*(MAP_WALLET + i))->end[0];
+		prev_y = (*(MAP_WALLET + i))->end[1];
 	}
 	map = *(MAP_WALLET + 0);
 	/* place the character on the entrance */
@@ -100,6 +100,7 @@ main(void)
 	kill_curses();
 	kill_mapspace(map);
 	kill_playerspace(player);
+	free(MAP_WALLET);
 	return 0;
 }
 

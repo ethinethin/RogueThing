@@ -299,8 +299,8 @@ place_room(struct mapspace *map, struct mapspace *room, int x, int y)
 				} else {
 					f = FLOOR_OPEN;
 				}
-			} else if (m_f == FLOOR_OPEN && r_f == FLOOR_WALL) {
-				f = FLOOR_OPEN;
+			} else if (r_f == FLOOR_WALL) {
+				continue;
 			} else {
 				f = r_f;
 			}

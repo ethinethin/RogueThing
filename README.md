@@ -19,13 +19,10 @@ WASD - move up/left/down/right
 
 QEZC - move diagonally
 
+< and > - go up and down stairs
+
 S - wait
 
 L - enter look mode
 
 P - quit
-
-# Note
-
-Game may enter a state where it cannot place stairs up/stairs down
-
