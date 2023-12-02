@@ -10,16 +10,15 @@ static void	make_paths(struct mapspace *map);
 static void	make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h);
 static void	make_path(struct mapspace *map, int room1, int room2);
 static int	check_paths(struct mapspace *map);
-static int	check_area(struct mapspace *map);
 static int	fill_point(struct mapspace *map, char *connected, int x, int y);
-static void	carve_room(struct mapspace *room);
-static void	place_room(struct mapspace *map, struct mapspace *room, int x, int y);
+static int	check_area(struct mapspace *map);
+static void	place_room(struct mapspace *map, int x, int y, int w, int h);
 static void	place_exits(struct mapspace *map, int r1_x, int r1_y);
 
 char *floor_names[7] = { "Open floor", "Stone wall", "Open path", "", "Door", "A staircase down", "A staircase up" };
 
 struct mapspace *
-init_mapspace(int w, int h, int is_room, int floor_n, int r1_x, int r1_y)
+init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y)
 {
 	int i;
 	struct mapspace *map;
@@ -38,16 +37,14 @@ init_mapspace(int w, int h, int is_room, int floor_n, int r1_x, int r1_y)
 	map->room_x = NULL;
 	map->room_y = NULL;
 	/* add room locations and paths */
-	if (is_room == 0) {
-		add_rooms(map, 9, r1_x, r1_y);
-		make_paths(map);
-		/* make rooms and place */
-		make_rooms(map, 9, 6, 16, 9);
-		place_exits(map, r1_x, r1_y);
-		if (check_paths(map) == 1 || check_area(map) < 700) {
-			kill_mapspace(map);
-			map = init_mapspace(100, 25, 0, floor_n, r1_x, r1_y);
-		}
+	add_rooms(map, 9, r1_x, r1_y);
+	make_paths(map);
+	/* make rooms and place */
+	make_rooms(map, 8, 4, 12, 5);
+	place_exits(map, r1_x, r1_y);
+	if (check_paths(map) == 1 || check_area(map) < 700) {
+		kill_mapspace(map);
+		map = init_mapspace(100, 25, floor_n, r1_x, r1_y);
 	}
 	return map;
 }
@@ -77,7 +74,7 @@ distp(int x1, int y1, int x2, int y2)
 	return c;
 }
 
-#define MIN_DIST 30
+#define MIN_DIST 40
 static void
 check_distp(struct mapspace *map, int r1_x, int r1_y)
 {
@@ -118,14 +115,12 @@ add_rooms(struct mapspace *map, int n_rooms, int r1_x, int r1_y)
 		start = 1;
 		*(map->room_x + 0) = r1_x;
 		*(map->room_y + 0) = r1_y;
-		*(map->floorspace + xy2flat(r1_x, r1_y, map->w)) = FLOOR_ROOM;
 	}
 	for (i = start; i < n_rooms; i += 1) {
 		x = rand_num(5, 94);
 		y = rand_num(2, 22);
 		*(map->room_x + i) = x;
 		*(map->room_y + i) = y;
-		*(map->floorspace + xy2flat(x, y, map->w)) = FLOOR_ROOM;
 	}
 	/* Make sure rooms are far enough apart */
 	check_distp(map, r1_x, r1_y);
@@ -138,9 +133,8 @@ make_paths(struct mapspace *map)
 
 	for (i = 0; i < map->n_rooms - 1; i += 1) {
 		for (j = i + 1; j < map->n_rooms; j += 1) {
-			if (j == i) continue;
 			r = rand_num(0, 99);
-			if (r > 65) {
+			if (r >= 55) {
 				make_path(map, i, j);
 			}
 		}
@@ -180,8 +174,8 @@ make_path(struct mapspace *map, int room1, int room2)
 				}
 				break;
 		}
-		if (x == *(map->room_x + room2) && y == *(map->room_y + room2)) break;
 		if (*(map->floorspace + xy2flat(x, y, map->w)) == FLOOR_WALL) *(map->floorspace + xy2flat(x, y, map->w)) = FLOOR_PATH;
+		if (x == *(map->room_x + room2) || y == *(map->room_y + room2)) break;
 	}
 }
 
@@ -215,19 +209,6 @@ check_paths(struct mapspace *map)
 }
 
 static int
-check_area(struct mapspace *map)
-{
-	int a, i;
-
-	for (i = 0, a = 0; i < map->w * map->h; i += 1) {
-		if (*(map->floorspace + i) != FLOOR_WALL) {
-			a += 1;
-		}
-	}
-	return a;
-}
-
-static int
 fill_point(struct mapspace *map, char *connected, int x, int y)
 {
 	int changes, dx, dy;
@@ -246,67 +227,50 @@ fill_point(struct mapspace *map, char *connected, int x, int y)
 	return changes;	
 }
 
+static int
+check_area(struct mapspace *map)
+{
+	int a, i;
+
+	for (i = 0, a = 0; i < map->w * map->h; i += 1) {
+		if (*(map->floorspace + i) != FLOOR_WALL) {
+			a += 1;
+		}
+	}
+	return a;
+}
+
 static void
 make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h)
 {
 	int i, w, h;
-	struct mapspace *room;
 	
 	for (i = 0; i < map->n_rooms; i += 1) {
 		w = rand_num(min_w, max_w);
 		h = rand_num(min_h, max_h);
-		room = init_mapspace(w, h, 1, -1, -1, -1);
-		carve_room(room);
-		place_room(map, room, *(map->room_x + i), *(map->room_y + i));
-		kill_mapspace(room);
+		place_room(map, *(map->room_x + i), *(map->room_y + i), w, h);
 	}	
 }
 
 static void
-carve_room(struct mapspace *room)
+place_room(struct mapspace *map, int x, int y, int w, int h)
 {
 	int i, j;
 
-	for (j = 1; j < room->h - 1; j += 1) {
-		for (i = 1; i < room->w - 1; i += 1) {
-			*(room->floorspace + xy2flat(i, j, room->w)) = FLOOR_OPEN;
-		}
-	}
-}
-
-static void
-place_room(struct mapspace *map, struct mapspace *room, int x, int y)
-{
-	int f, i, j;
-	int m_f, r_f;
-
 	/* Place room so coordinate is center */
-	x = x - room->w / 2;
-	y = y - room->h / 2;
+	x = x - w / 2;
+	y = y - h / 2;
 	/* Check if room will be off map */
 	if (x < 1) x = 1;
-	if (x > map->w - room->w - 1) x = map->w - room->w - 1;
+	if (x > map->w - w - 1) x = map->w - w - 1;
 	if (y < 1) y = 1;
-	if (y > map->h - room->h - 1) y = map->h - room->h - 1;
+	if (y > map->h - h - 1) y = map->h - h - 1;
 	/* Place the map */
-	for (j = 0; j < room->h; j += 1) {
-		for (i = 0; i < room->w; i += 1) {
-			m_f = *(map->floorspace + xy2flat(x + i, y + j, map->w));
-			r_f = *(room->floorspace + xy2flat(i, j, room->w));
-			if (m_f == FLOOR_PATH && r_f == FLOOR_WALL) {
-				if (rand_num(0, 5) == 0) {
-					f = FLOOR_DOOR;
-				} else {
-					f = FLOOR_OPEN;
-				}
-			} else if (r_f == FLOOR_WALL) {
-				continue;
-			} else {
-				f = r_f;
-			}
-			*(map->floorspace + xy2flat(x + i, y + j, map->w)) = f;
+	for (i = 0; i < h; i += 1) {
+		for (j = 0; j < w; j+= 1) {
+			*(map->floorspace + xy2flat(x + j, y + i, map->w)) = FLOOR_OPEN;
 		}
-	}		
+	}
 }
 
 int

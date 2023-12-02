@@ -8,15 +8,17 @@
 #define ADD_Y 1
 
 static void	check_window(void);
+static void	init_colors(void);
 static void	format_time(int cur_time, char time_f[20]);
 
-static char floor_sym[] = { '.', '#', '.', '*', 'O', 'v', '^' };
+static char floor_sym[] = { ' ', '#', '.', '*', 'O', 'v', '^' };
 
 void
 init_curses(void)
 {
 	initscr();
 	check_window();
+	init_colors();
 	raw();
 	noecho();
 	nodelay(stdscr, 1);
@@ -28,7 +30,7 @@ static void
 check_window(void)
 {
 	int x, y;
-
+	return;
 	x = getmaxx(stdscr);
 	y = getmaxy(stdscr);
 	if (x < 130 || y < 32) {
@@ -36,6 +38,19 @@ check_window(void)
 		printf("Please ensure the terminal screen is at least 130x32\n");
 		exit(1);
 	}
+	if (has_colors() == FALSE) {
+		endwin();
+		printf("Your terminal does not support colors\n");
+		exit(1);
+	}
+}
+
+static void
+init_colors(void)
+{
+	start_color();
+	init_pair(1, COLOR_WHITE, COLOR_BLACK);
+	init_pair(2, COLOR_BLUE, COLOR_BLACK);
 }
 
 void
@@ -51,13 +66,24 @@ draw_character(int x, int y)
 }
 
 void
-print_mapspace(struct mapspace *map)
+print_mapspace(struct mapspace *map, struct playerspace *player)
 {
+	char c;
 	int i, j;
 
 	for (j = 0; j < map->h; j += 1) {
 		for (i = 0; i < map->w; i += 1) {
-			if (*(map->explored + xy2flat(i, j, map->w)) == 1) mvaddch(j + ADD_Y, i + ADD_X, floor_sym[*(map->floorspace + xy2flat(i, j, map->w))]);
+			if (*(map->explored + xy2flat(i, j, map->w)) == 1) {
+				c = floor_sym[*(map->floorspace + xy2flat(i, j, map->w))];
+				if (*(player->vis + xy2flat(i, j, map->w)) != 0) {
+					attron(COLOR_PAIR(1));
+					mvaddch(j + ADD_Y, i + ADD_X, c);
+				} else {
+					attron(COLOR_PAIR(2));
+					mvaddch(j + ADD_Y, i + ADD_X, c);
+					attron(COLOR_PAIR(1));
+				}
+			}
 		}
 	}
 }

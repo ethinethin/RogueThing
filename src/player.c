@@ -8,10 +8,15 @@
 #define TIME_TICK 10
 
 static void	rando_name(char name[18]);
+static void	clear_vis(struct mapspace *map, struct playerspace *player);
+static void	vis_room(struct mapspace *map, struct playerspace *player);
+static int	fill_point(struct mapspace *map, char *vis, int x, int y);
+static void	update_explored(struct mapspace *map, struct playerspace *player);
 
 struct playerspace *
-init_playerspace(int x, int y)
+init_playerspace(struct mapspace *map, int x, int y)
 {
+	int i;
 	struct playerspace *player;
 
 	player = malloc(sizeof(*player));
@@ -20,12 +25,15 @@ init_playerspace(int x, int y)
 	player->cur_floor = 0;
 	player->cur_time = 0;
 	rando_name(player->name);
+	player->vis = malloc(sizeof(*player->vis) * map->w * map->h);
+	for (i = 0; i < map->w * map->h; i += 1) *(player->vis + i) = 0;
 	return player;
 }
 
 void
 kill_playerspace(struct playerspace *player)
 {
+	free(player->vis);
 	free(player);
 } 
 
@@ -79,3 +87,102 @@ move_floors(struct mapspace *map, struct playerspace *player, int z, int maxfloo
 		player->cur_time += TIME_TICK;
 	}
 }
+
+void
+check_vis(struct mapspace *map, struct playerspace *player)
+{
+	int f, x, y;
+	char in_room;
+
+	clear_vis(map, player);
+	/* If we are in a room or adjacent to a room, we should see inside the room */
+	for (x = player->x - 1, in_room = 0; x <= player->x + 1; x += 1) {
+		for (y = player->y - 1; y <= player->y + 1; y += 1) {
+			f = *(map->floorspace + xy2flat(x, y, map->w));
+			/* Update explored and visible for this area */
+			*(map->explored + xy2flat(x, y, map->w)) = 1;
+			if (f == FLOOR_WALL || f == FLOOR_PATH) {
+				*(player->vis + xy2flat(x, y, map->w)) = 2;
+			} else {
+				*(player->vis + xy2flat(x, y, map->w)) = 1;
+			}
+			/* Check is it a room? */
+			if (*(map->floorspace + xy2flat(x, y, map->w)) == FLOOR_OPEN) {
+				in_room = 1;
+			}
+		}
+	}
+	if (in_room == 0) return;
+	/* We are in a room ... we need to make the whole thing visible */
+	vis_room(map, player);
+	/* Now update explored so we can see it */
+	update_explored(map, player);
+}
+
+static void
+clear_vis(struct mapspace *map, struct playerspace *player)
+{
+	int x, y;
+
+	for (x = 0; x < map->w; x += 1) {
+		for (y = 0; y < map->h; y += 1) {
+			*(player->vis + xy2flat(x, y, map->w)) = 0;
+		}
+	}
+}
+
+static void
+vis_room(struct mapspace *map, struct playerspace *player)
+{
+	int changes, x, y;
+
+	while (1) {
+		changes = 0;
+		for (x = 0; x < map->w; x += 1) {
+			for (y = 0; y < map->h; y += 1) {
+				if (*(player->vis + xy2flat(x, y, map->w)) == 1) {
+					changes += fill_point(map, player->vis, x, y);
+				}
+			}
+		}
+		if (changes == 0) break;
+	}
+}
+
+static int
+fill_point(struct mapspace *map, char *vis, int x, int y)
+{
+	int changes, dx, dy, f;
+	
+	changes = 0;
+	for (dx = -1; dx <= 1; dx += 1) {
+		for (dy = -1; dy <= 1; dy += 1) {
+			if (x + dx < 0 || x + dx > map->w - 1 || y + dy < 0 || y + dy > map->h -1) continue;
+			if (*(vis + xy2flat(x + dx, y + dy, map->w)) == 0) {
+				f = *(map->floorspace + xy2flat(x + dx, y + dy, map->w));
+				if (f == FLOOR_OPEN || f == FLOOR_BEGIN || f == FLOOR_END) {
+					*(vis + xy2flat(x + dx, y + dy, map->w)) = 1;
+					changes += 1;
+				} else if (f == FLOOR_WALL || f == FLOOR_PATH) {
+					*(vis + xy2flat(x + dx, y + dy, map->w)) = 2;
+					changes += 1;
+				}
+			}
+		}
+	}
+	return changes;	
+}
+
+static void
+update_explored(struct mapspace *map, struct playerspace *player)
+{
+	int x, y;
+
+	for (x = 0; x < map->w; x += 1) {
+		for (y = 0; y < map->h; y += 1) {
+			if (*(player->vis + xy2flat(x, y, map->w)) != 0) {
+				*(map->explored + xy2flat(x, y, map->w)) = 1;
+			}
+		}
+	}
+}	

@@ -14,7 +14,7 @@ struct mapspace {
 	int end[2];
 };
 
-extern struct mapspace *	init_mapspace(int w, int h, int is_room, int floor_n, int r1_x, int r1_y);
+extern struct mapspace *	init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y);
 extern void			kill_mapspace(struct mapspace *map);
 extern int			xy2flat(int x, int y, int max_w);
 

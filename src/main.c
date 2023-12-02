@@ -7,10 +7,9 @@
 #include "player.h"
 #include "rand.h"
 
-static void	check_explored(struct mapspace *map, int cx, int cy);
 static void	look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy);
 
-#define NUM_MAPS 100
+#define NUM_MAPS 5
 struct mapspace **MAP_WALLET;
 
 int
@@ -28,19 +27,19 @@ main(void)
 	MAP_WALLET = malloc(sizeof(*MAP_WALLET) * NUM_MAPS);
 	prev_x = -1; prev_y = -1;
 	for (i = 0; i < NUM_MAPS; i += 1) {
-		*(MAP_WALLET + i) = init_mapspace(100, 25, 0, i, prev_x, prev_y);
+		*(MAP_WALLET + i) = init_mapspace(100, 25, i, prev_x, prev_y);
 		prev_x = (*(MAP_WALLET + i))->end[0];
 		prev_y = (*(MAP_WALLET + i))->end[1];
 	}
 	map = *(MAP_WALLET + 0);
 	/* place the character on the entrance */
-	player = init_playerspace(map->begin[0], map->begin[1]);
+	player = init_playerspace(map, map->begin[0], map->begin[1]);
 	init_curses();
 	/* input loop */
 	while ((c = getch()) != 'p' && c != 'P') {
 		erase();
-		check_explored(map, player->x, player->y);
-		print_mapspace(map);
+		check_vis(map, player);
+		print_mapspace(map, player);
 		draw_character(player->x, player->y);
 		draw_commands(0);
 		draw_playerinfo(player);
@@ -105,19 +104,6 @@ main(void)
 }
 
 static void
-check_explored(struct mapspace *map, int cx, int cy)
-{
-	int i, j;
-
-	for (j = cy - 2; j <= cy + 2; j += 1) {
-		for (i = cx - 4; i <= cx + 4; i += 1) {
-			if (i < 0 || j < 0 || i >= map->w - 1 || j >= map->h - 1) continue;
-			*(map->explored + xy2flat(i, j, map->w)) = 1;
-		}
-	}
-}
-
-static void
 look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy)
 {
 	char on_player;
@@ -126,7 +112,7 @@ look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy)
 	x = cx;
 	y = cy;
 	while ((c = getch()) != 'l' && c != 'L') {
-		print_mapspace(map);
+		print_mapspace(map, player);
 		draw_character(cx, cy);
 		draw_commands(1);
 		draw_playerinfo(player);
