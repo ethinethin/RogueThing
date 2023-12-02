@@ -110,7 +110,7 @@ void
 draw_commands(int look)
 {
 	if (look == 0) {
-		mvprintw(27, 1, "[L] Look mode    [P] pQuit game");
+		mvprintw(27, 1, "[L] Look mode    [P] pSave/Quit");
 	} else {
 		mvprintw(27, 1, "[L] Exit Look mode                  ");
 	}

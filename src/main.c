@@ -6,10 +6,11 @@
 #include "map.h"
 #include "player.h"
 #include "rand.h"
+#include "save.h"
 
 static void	look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy);
 
-#define NUM_MAPS 5
+#define NUM_MAPS 1
 struct mapspace **MAP_WALLET;
 
 int
@@ -96,6 +97,7 @@ main(void)
 				break;
 		}
 	}
+	quitsave(MAP_WALLET, player, NUM_MAPS);
 	kill_curses();
 	kill_mapspace(map);
 	kill_playerspace(player);

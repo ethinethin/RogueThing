@@ -297,7 +297,10 @@ place_exits(struct mapspace *map, int r1_x, int r1_y)
 		}
 		x2 = rand_num(5, 94);
 		y2 = rand_num(2, 22);
-		if (counter % 10 == 0) dist_apart -= 5;
+		if (counter % 100 == 0) {
+			dist_apart -= 5;
+			if (dist_apart < 5) dist_apart = 5;
+		}
 	} while (distp(x1, y1, x2, y2) < dist_apart || *(map->floorspace + xy2flat(x1, y1, map->w)) != FLOOR_OPEN || *(map->floorspace + xy2flat(x2, y2, map->w)) != FLOOR_OPEN);
 	map->begin[0] = x1;
 	map->begin[1] = y1;
