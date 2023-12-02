@@ -10,7 +10,7 @@
 
 static void	look_cursor(struct mapspace *map, struct playerspace *player, int cx, int cy);
 
-#define NUM_MAPS 1
+#define NUM_MAPS 10
 struct mapspace **MAP_WALLET;
 
 int
