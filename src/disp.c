@@ -31,7 +31,7 @@ static void
 check_window(void)
 {
 	int x, y;
-	return;
+
 	x = getmaxx(stdscr);
 	y = getmaxy(stdscr);
 	if (x < 130 || y < 32) {
