@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "libs.h"
 #include "map.h"
+#include "menu.h"
 #include "player.h"
 
 #define ADD_X 2
@@ -147,4 +148,26 @@ format_time(int cur_time, char time_f[20])
 	h = cur_time / 60 - d * 24;
 	m = cur_time - d * 24 * 60 - h * 60;
 	sprintf(time_f, "%d-%02d:%02d  ", d, h, m);
+}
+
+void
+draw_menu(int state)
+{
+	int line;
+
+	mvprintw(1, 2, "Game Title Goes Here");
+	mvprintw(3, 2, "Main Menu");
+	mvprintw(4, 5, "[N] New game");
+	if ((state & STATE_SAVE) == STATE_SAVE) {
+		line = 6;
+		mvprintw(5, 5, "[L] Load game");
+	} else {
+		line = 5;
+	}
+	mvprintw(line, 5, "[O] Options");
+	if ((state & STATE_PROGRESS) == STATE_PROGRESS) {
+		mvprintw(line + 1, 5, "[Q] Save and quit");		
+	} else {
+		mvprintw(line + 1, 5, "[Q] Quit");
+	}
 }

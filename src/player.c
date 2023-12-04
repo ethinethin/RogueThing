@@ -25,8 +25,18 @@ init_playerspace(struct mapspace *map, int x, int y)
 	player->cur_floor = 0;
 	player->cur_time = 0;
 	rando_name(player->name);
+	/* Set up visibility space and initialize to 0 */
 	player->vis = malloc(sizeof(*player->vis) * map->w * map->h);
 	for (i = 0; i < map->w * map->h; i += 1) *(player->vis + i) = 0;
+	/* Set stats to default numbers */
+	player->stats.hp = 10;
+	player->stats.sp = 10;
+	player->stats.pa = 10;
+	player->stats.pd = 10;
+	player->stats.ra = 10;
+	player->stats.rd = 10;
+	player->stats.bp = 10;
+	player->stats.ep = 0;
 	return player;
 }
 

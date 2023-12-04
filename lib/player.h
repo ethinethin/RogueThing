@@ -10,6 +10,16 @@ struct playerspace {
 	int cur_time;
 	char name[18];
 	char *vis;
+	struct stats {
+		int hp;
+		int sp;
+		int pa;
+		int pd;
+		int ra;
+		int rd;
+		int bp;
+		int ep;
+	} stats;
 };
 
 extern void			move_player(struct mapspace *map, struct playerspace *player, int x, int y);
