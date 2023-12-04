@@ -133,10 +133,13 @@ void
 draw_playerinfo(struct playerspace *player)
 {
 	char time_f[20];
+
 	mvprintw(0, 1, "Name: %s", player->name);
+	mvprintw(0, 26, "HP: %d / %d", player->stats.hp, player->stats.maxhp);
+	mvprintw(0, 51, "SP: %d / %d", player->stats.sp, player->stats.maxsp);
+	mvprintw(0, 76, "Floor: %d", player->cur_floor + 1);
 	format_time(player->cur_time, time_f);
-	mvprintw(0, 26, "Time: %s", time_f);
-	mvprintw(0, 46, "Floor: %d", player->cur_floor + 1);
+	mvprintw(0, 101, "Time: %s", time_f);
 }
 
 static void

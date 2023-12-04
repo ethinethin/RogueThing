@@ -12,7 +12,9 @@ struct playerspace {
 	char *vis;
 	struct stats {
 		int hp;
+		int maxhp;
 		int sp;
+		int maxsp;
 		int pa;
 		int pd;
 		int ra;

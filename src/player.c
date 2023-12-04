@@ -30,7 +30,9 @@ init_playerspace(struct mapspace *map, int x, int y)
 	for (i = 0; i < map->w * map->h; i += 1) *(player->vis + i) = 0;
 	/* Set stats to default numbers */
 	player->stats.hp = 10;
+	player->stats.maxhp = 10;
 	player->stats.sp = 10;
+	player->stats.maxsp = 10;
 	player->stats.pa = 10;
 	player->stats.pd = 10;
 	player->stats.ra = 10;

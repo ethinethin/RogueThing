@@ -17,7 +17,7 @@ static void	game_quit(void);
 struct mapspace **MAP_WALLET = NULL;
 struct mapspace *MAP = NULL;
 struct playerspace *PLAYER = NULL;
-int N_MAPS = 10;
+int N_MAPS = 5;
 
 int
 main(void)
