@@ -29,6 +29,7 @@ init_playerspace(struct mapspace *map, int x, int y)
 	player->vis = malloc(sizeof(*player->vis) * map->w * map->h);
 	for (i = 0; i < map->w * map->h; i += 1) *(player->vis + i) = 0;
 	/* Set stats to default numbers */
+	player->stats.level = 1;
 	player->stats.hp = 10;
 	player->stats.maxhp = 10;
 	player->stats.sp = 10;

@@ -11,6 +11,7 @@ struct playerspace {
 	char name[18];
 	char *vis;
 	struct stats {
+		int level;
 		int hp;
 		int maxhp;
 		int sp;

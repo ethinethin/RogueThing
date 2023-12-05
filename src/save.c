@@ -75,7 +75,7 @@ static void
 save_player(struct playerspace *player, FILE *f)
 {
 	fprintf(f, "%d %d %d %d %s\n", player->x, player->y, player->cur_floor, player->cur_time, player->name);
-	fprintf(f, "%d %d %d %d %d %d %d %d %d %d\n", player->stats.hp, player->stats.maxhp, player->stats.sp, player->stats.maxsp, player->stats.pa, player->stats.pd, player->stats.ra, player->stats.rd, player->stats.bp, player->stats.ep);
+	fprintf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", player->stats.level, player->stats.hp, player->stats.maxhp, player->stats.sp, player->stats.maxsp, player->stats.pa, player->stats.pd, player->stats.ra, player->stats.rd, player->stats.bp, player->stats.ep);
 }
 
 int
@@ -135,5 +135,5 @@ load_player(struct playerspace **player, FILE *f, struct mapspace *map)
 	p = *player;
 	fscanf(f, "%d %d %d %d %s\n", &p->x, &p->y, &p->cur_floor, &p->cur_time, p->name);
 	p->vis = malloc(sizeof(*p->vis) * map->w * map->h);
-	fscanf(f, "%d %d %d %d %d %d %d %d %d %d\n", &p->stats.hp, &p->stats.maxhp, &p->stats.sp, &p->stats.maxsp, &p->stats.pa, &p->stats.pd, &p->stats.ra, &p->stats.rd, &p->stats.bp, &p->stats.ep);
+	fscanf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", &p->stats.level, &p->stats.hp, &p->stats.maxhp, &p->stats.sp, &p->stats.maxsp, &p->stats.pa, &p->stats.pd, &p->stats.ra, &p->stats.rd, &p->stats.bp, &p->stats.ep);
 }

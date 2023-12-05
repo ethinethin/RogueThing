@@ -31,6 +31,7 @@ static void
 check_window(void)
 {
 	int x, y;
+	return;
 
 	x = getmaxx(stdscr);
 	y = getmaxy(stdscr);
@@ -133,13 +134,16 @@ void
 draw_playerinfo(struct playerspace *player)
 {
 	char time_f[20];
+	int barloc[5] = { 24, 42, 60, 72, 85 }, i;
 
-	mvprintw(0, 1, "Name: %s", player->name);
-	mvprintw(0, 26, "HP: %d / %d", player->stats.hp, player->stats.maxhp);
-	mvprintw(0, 51, "SP: %d / %d", player->stats.sp, player->stats.maxsp);
-	mvprintw(0, 76, "Floor: %d", player->cur_floor + 1);
+	for (i = 0; i < 5; i += 1) mvaddch(0, barloc[i], '|');
+	mvprintw(0, 0, "Name: %s", player->name);
+	mvprintw(0, 26, "HP: %4d / %4d", player->stats.hp, player->stats.maxhp);
+	mvprintw(0, 44, "SP: %4d / %4d", player->stats.sp, player->stats.maxsp);
+	mvprintw(0, 62, "Level: %2d", player->stats.level);
+	mvprintw(0, 74, "Floor: %3d", player->cur_floor + 1);
 	format_time(player->cur_time, time_f);
-	mvprintw(0, 101, "Time: %s", time_f);
+	mvprintw(0, 87, "Time: %s", time_f);
 }
 
 static void
@@ -173,4 +177,25 @@ draw_menu(int state)
 	} else {
 		mvprintw(line + 1, 5, "[Q] Quit");
 	}
+}
+
+void
+draw_progress(char *message, int x, int y, int progress, int *oarg1, int *oarg2)
+{
+	int i;
+
+	if (oarg1 != NULL && oarg2 != NULL) {
+		mvprintw(y, x, message, *oarg1, *oarg2);
+	} else if (oarg1 != NULL) {
+		mvprintw(y, x, message, *oarg1);
+	} else {
+		mvprintw(y, x, message);
+	}
+	move(y + 1, x);
+	addch('|');
+	for (i = 0; i < 100; i += 1) addch('-');
+	addch('|');
+	move(y + 1, x + 1);
+	for (i = 0; i < progress; i += 1) addch('#');
+	refresh();
 }

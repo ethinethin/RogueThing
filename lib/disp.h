@@ -13,5 +13,6 @@ extern void	draw_commands(int look);
 extern void	draw_look(int floorspace, char vis, char on_player);
 extern void	draw_playerinfo(struct playerspace *player);
 extern void	draw_menu(int state);
+extern void	draw_progress(char *message, int x, int y, int progress, int *oarg1, int *oarg2);
 
 #endif

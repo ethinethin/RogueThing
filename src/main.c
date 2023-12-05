@@ -17,7 +17,7 @@ static void	game_quit(void);
 struct mapspace **MAP_WALLET = NULL;
 struct mapspace *MAP = NULL;
 struct playerspace *PLAYER = NULL;
-int N_MAPS = 5;
+int N_MAPS = 100;
 
 int
 main(void)
@@ -189,6 +189,7 @@ game_new(void)
 	MAP_WALLET = malloc(sizeof(*MAP_WALLET) * N_MAPS);
 	prev_x = -1; prev_y = -1;
 	for (i = 0; i < N_MAPS; i += 1) {
+		draw_progress("Generating maps (map %d of %d)", 2, 10, (i * 100) / (N_MAPS - 1), &i, &N_MAPS);
 		*(MAP_WALLET + i) = init_mapspace(100, 25, i, prev_x, prev_y);
 		prev_x = (*(MAP_WALLET + i))->end[0];
 		prev_y = (*(MAP_WALLET + i))->end[1];

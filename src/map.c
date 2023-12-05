@@ -20,7 +20,7 @@ char *floor_names[7] = { "Open floor", "Stone wall", "Open path", "", "Door", "A
 struct mapspace *
 init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y)
 {
-	int i;
+	int i, n_rooms;
 	struct mapspace *map;
 
 	map = malloc(sizeof(*map));
@@ -37,12 +37,13 @@ init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y)
 	map->room_x = NULL;
 	map->room_y = NULL;
 	/* add room locations and paths */
-	add_rooms(map, 9, r1_x, r1_y);
+	n_rooms = rand_num(7, 9);
+	add_rooms(map, n_rooms, r1_x, r1_y);
 	make_paths(map);
 	/* make rooms and place */
 	make_rooms(map, 8, 4, 12, 5);
 	place_exits(map, r1_x, r1_y);
-	if (check_paths(map) == 1 || check_area(map) < 700) {
+	if (check_paths(map) == 1 || check_area(map) < (n_rooms * 80)) {
 		kill_mapspace(map);
 		map = init_mapspace(100, 25, floor_n, r1_x, r1_y);
 	}
@@ -202,10 +203,10 @@ check_paths(struct mapspace *map)
 		}
 		if (changes == 0) break;
 	}
-	for (y = 0, x = 0; y < 9; y += 1) {
+	for (y = 0, x = 0; y < map->n_rooms; y += 1) {
 		x += *(connected + xy2flat(*(map->room_x + y), *(map->room_y + y), map->w));
 	}
-	return (x == 9) ? 0 : 1;
+	return (x == map->n_rooms) ? 0 : 1;
 }
 
 static int
