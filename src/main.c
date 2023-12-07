@@ -35,6 +35,7 @@ main(void)
 	menu = main_menu();
 	/* Act on menu options returned */
 	game_startup(menu);
+	erase();
 	/* input loop */
 	update = 1;
 	while (1) {
