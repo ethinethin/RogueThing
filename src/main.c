@@ -22,29 +22,37 @@ int N_MAPS = 100;
 int
 main(void)
 {
-	int c, menu;
+	int c, menu, update;
 	long int seed;
 
 	/* seed rng */
 	seed = seed_rng();
 	printf("%ld\n", seed);
-	/* Initialize curses & the menu, then go to the main menu */
+	/* Initialize curses, the message log, & the menu, then go to the main menu */
 	init_curses();
+	init_log();
 	init_menu();
 	menu = main_menu();
+	/* Act on menu options returned */
 	game_startup(menu);
 	/* input loop */
+	update = 1;
 	while (1) {
 		MAP = *(MAP_WALLET + PLAYER->cur_floor);
+		if (update == 1) {
+			/* Only redraw screen if user input was received */
+			check_vis(MAP, PLAYER);
+			print_mapspace(MAP, PLAYER);
+			draw_character(PLAYER->x, PLAYER->y);
+			draw_commands(0);
+			draw_playerinfo(PLAYER);
+			draw_log();
+			update = 0;
+		}
+		/* Get input and sleep for 1/60th of a second */
 		c = getch();
-		erase();
-		check_vis(MAP, PLAYER);
-		print_mapspace(MAP, PLAYER);
-		draw_character(PLAYER->x, PLAYER->y);
-		draw_commands(0);
-		draw_playerinfo(PLAYER);
-		refresh();
-		usleep(8333);
+		usleep(16667);
+		update = 1;
 		switch (c) {
 			case 'q':
 			case 'Q':
@@ -96,6 +104,10 @@ main(void)
 			case 'P':
 				game_quit();
 				break;
+			default:
+				/* No input of consequence was received, don't update */
+				update = 0;
+				break;
 		}
 	}
 	return 0;
@@ -106,14 +118,17 @@ look_cursor(int cx, int cy)
 {
 	char on_player;
 	int c, x, y;
-	
+
+	/* Draw initial screen */
+	draw_commands(1);
+	draw_playerinfo(PLAYER);
+	print_mapspace(MAP, PLAYER);
+	draw_log();
+	draw_character(cx, cy);
+	/* Set cursor on character */
 	x = cx;
 	y = cy;
 	while ((c = getch()) != 'l' && c != 'L') {
-		print_mapspace(MAP, PLAYER);
-		draw_character(cx, cy);
-		draw_commands(1);
-		draw_playerinfo(PLAYER);
 		if (x == cx && y == cy) {
 			on_player = 1;
 		} else {
@@ -121,8 +136,7 @@ look_cursor(int cx, int cy)
 		}
 		draw_look(*(MAP->floorspace + xy2flat(x, y, MAP->w)), *(MAP->explored + xy2flat(x, y, MAP->w)), on_player);
 		draw_cursor(x, y);
-		refresh();
-		usleep(8333);
+		usleep(16667);
 		switch (c) {
 			case 'q':
 			case 'Q':
@@ -183,13 +197,15 @@ game_startup(int menu)
 static void
 game_new(void)
 {
+	char message[1024];
 	int i, prev_x, prev_y;
 
 	/* make maps */
 	MAP_WALLET = malloc(sizeof(*MAP_WALLET) * N_MAPS);
 	prev_x = -1; prev_y = -1;
 	for (i = 0; i < N_MAPS; i += 1) {
-		draw_progress("Generating maps (map %d of %d)", 2, 10, (i * 100) / (N_MAPS - 1), &i, &N_MAPS);
+		sprintf(message, "Generating maps (map %d of %d)", i + 1, N_MAPS);
+		draw_progress(message, 2, 10, (i * 100) / (N_MAPS - 1));
 		*(MAP_WALLET + i) = init_mapspace(100, 25, i, prev_x, prev_y);
 		prev_x = (*(MAP_WALLET + i))->end[0];
 		prev_y = (*(MAP_WALLET + i))->end[1];

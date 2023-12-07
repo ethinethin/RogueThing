@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "disp.h"
 #include "libs.h"
 #include "map.h"
 #include "player.h"
@@ -53,6 +54,7 @@ kill_playerspace(struct playerspace *player)
 void
 move_player(struct mapspace *map, struct playerspace *player, int cx, int cy)
 {
+	char mesg[200];
 	int x, y;
 
 	/* Change coordinates */
@@ -66,6 +68,28 @@ move_player(struct mapspace *map, struct playerspace *player, int cx, int cy)
 	player->x = x;
 	player->y = y;
 	player->cur_time += TIME_TICK;
+
+	// REMOVE THIS STUFF LATER - THIS IS JUST FOR PROOF OF CONCEPT
+	if (cx == 0 && cy == -1) {
+		sprintf(mesg, "You moved north.");
+	} else if (cx == 1 && cy == 0) {
+		sprintf(mesg, "You moved east.");
+	} else if (cx == 0 && cy == 1) {
+		sprintf(mesg, "You moved south.");
+	} else if (cx == -1 && cy == 0) {
+		sprintf(mesg, "You moved west.");
+	} else if (cx == 1 && cy == -1) {
+		sprintf(mesg, "You moved northeast.");
+	} else if (cx == 1 && cy == 1) {
+		sprintf(mesg, "You moved southeast.");
+	} else if (cx == -1 && cy == -1) {
+		sprintf(mesg, "You moved northwest.");
+	} else if (cx == -1 && cy == 1) {
+		sprintf(mesg, "You moved southwest.");
+	} else {
+		sprintf(mesg, "You did not move.");
+	}
+	add_log(mesg);
 }
 
 static void
@@ -91,6 +115,7 @@ rando_name(char name[18])
 void
 move_floors(struct mapspace *map, struct playerspace *player, int z, int maxfloor)
 {
+	char mesg[200];
 	int floorspace;
 
 	floorspace = *(map->floorspace + xy2flat(player->x, player->y, map->w));
@@ -98,7 +123,19 @@ move_floors(struct mapspace *map, struct playerspace *player, int z, int maxfloo
 	    (z == -1 && floorspace == FLOOR_BEGIN && player->cur_floor > 0)) {
 		player->cur_floor += z;
 		player->cur_time += TIME_TICK;
+		if (z == 1) {
+			sprintf(mesg, "You moved up to floor %d.", player->cur_floor + 1);
+		} else if (z == -1) {
+			sprintf(mesg, "You moved down to floor %d.", player->cur_floor + 1);
+		}
+	} else {
+		if (z == 1) {
+			sprintf(mesg, "You could not move upstairs from here.");
+		} else if (z == -1) {
+			sprintf(mesg, "You could not move downstairs from here.");
+		}
 	}
+	add_log(mesg);
 }
 
 void
