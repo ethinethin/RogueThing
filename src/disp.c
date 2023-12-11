@@ -128,7 +128,7 @@ draw_commands(int mode)
 	for (i = 0; i < 101; i += 1) addch(' ');
 	/* Output commands at bottom, dependent upon current mode */
 	if (mode == 0) {
-		mvprintw(27, 1, "[L] Look mode    [P] pSave/Quit");
+		mvprintw(27, 1, "[M] Main menu      [L] Look mode");
 	} else {
 		mvprintw(27, 1, "[L] Exit Look mode");
 	}
@@ -189,10 +189,13 @@ draw_menu(int state)
 	mvprintw(1, 2, "Game Title Goes Here");
 	mvprintw(3, 2, "Main Menu");
 	mvprintw(4, 5, "[N] New game");
-	/* Allow loading a game if a savegame exists */
+	/* Allow loading a game if a savegame exists, allow back to game if in progress */
 	if ((state & STATE_SAVE) == STATE_SAVE) {
 		line = 6;
 		mvprintw(5, 5, "[L] Load game");
+	} else if ((state & STATE_PROGRESS) == STATE_PROGRESS) {
+		line = 6;
+		mvprintw(5, 5, "[B] Back to game");
 	} else {
 		/* Don't leave an empty line if there's no savegame */
 		line = 5;
@@ -233,6 +236,7 @@ draw_progress(char *mesg, int x, int y, int progress)
 #define DISP_LEN 30
 /* The message log itself */
 char MESG[LOG_LEN][MESG_LEN + 1];
+int N_MESG;
 
 void
 init_log(void)
@@ -240,10 +244,11 @@ init_log(void)
 	int i;
 	/* Initialize the message log by filling it with empty entries */
 	for (i = 0; i < LOG_LEN; i += 1) MESG[i][0] = '\0';
+	N_MESG = 0;
 }
 
 void
-draw_log(void)
+draw_log(int adj)
 {
 	int i, j;
 
@@ -264,6 +269,8 @@ draw_log(void)
 			mvaddch(i + 2, 103 + j, MESG[LOG_LEN - DISP_LEN + i][j]);
 		}
 	}
+	// Remove later.. silencing warning
+	if (adj == -1) return;
 }
 
 void
@@ -279,6 +286,8 @@ add_log(char *mesg)
 	scroll_log(n_lines);
 	/* Add the message to the buffer */
 	add_mesg(mesg, n_lines);
+	/* Increase the number of messages counter */
+	if (N_MESG < LOG_LEN) N_MESG += 1;
 }
 
 static void

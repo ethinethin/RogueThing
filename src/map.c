@@ -1,26 +1,35 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "libs.h"
 #include "map.h"
 #include "rand.h"
 
-static double	distp(int x1, int y1, int x2, int y2);
-static void	check_distp(struct mapspace *map, int r1_x, int r1_y);
-static void	add_rooms(struct mapspace *map, int n_rooms, int r1_x, int r1_y);
+static void	wallify_map(struct mapspace *map, int w, int h);
+static void	add_rooms(struct mapspace *map, int r1_x, int r1_y);
 static void	make_paths(struct mapspace *map);
-static void	make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h);
 static void	make_path(struct mapspace *map, int room1, int room2);
-static int	check_paths(struct mapspace *map);
 static int	fill_point(struct mapspace *map, char *connected, int x, int y);
-static int	check_area(struct mapspace *map);
+static void	place_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h);
 static void	place_room(struct mapspace *map, int x, int y, int w, int h);
 static void	place_exits(struct mapspace *map, int r1_x, int r1_y);
+static int	check_distp(struct mapspace *map);
+static double	distp(int x1, int y1, int x2, int y2);
+static int	check_paths(struct mapspace *map);
+static int	check_area(struct mapspace *map);
 
 char *floor_names[7] = { "Open floor", "Stone wall", "Open path", "", "Door", "A staircase down", "A staircase up" };
+
+#define MIN_DIST 4.2
+
+int
+xy2flat(int x, int y, int max_w)
+{
+	return y * max_w + x;
+}
 
 struct mapspace *
 init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y)
 {
-	int i, n_rooms;
 	struct mapspace *map;
 
 	map = malloc(sizeof(*map));
@@ -29,24 +38,17 @@ init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y)
 	map->h = h;
 	map->floorspace = malloc(sizeof(*map->floorspace) * w * h);
 	map->explored = malloc(sizeof(*map->explored) * w * h);
-	for (i = 0; i < w * h; i += 1) {
-		*(map->floorspace + i) = FLOOR_WALL;
-		*(map->explored + i) = 0;
-	}
-	map->n_rooms = 0;
-	map->room_x = NULL;
-	map->room_y = NULL;
-	/* add room locations and paths */
-	n_rooms = rand_num(7, 9);
-	add_rooms(map, n_rooms, r1_x, r1_y);
-	make_paths(map);
-	/* make rooms and place */
-	make_rooms(map, 8, 4, 12, 5);
-	place_exits(map, r1_x, r1_y);
-	if (check_paths(map) == 1 || check_area(map) < (n_rooms * 80)) {
-		kill_mapspace(map);
-		map = init_mapspace(100, 25, floor_n, r1_x, r1_y);
-	}
+	map->n_rooms = rand_num(7, 9);
+	map->room_x = malloc(sizeof(*map->room_x) * map->n_rooms);
+	map->room_y = malloc(sizeof(*map->room_y) * map->n_rooms);
+	/* add paths and rooms and make sure they're all connected */
+	do {
+		wallify_map(map, w, h);
+		add_rooms(map, r1_x, r1_y);
+		make_paths(map);
+		place_rooms(map, 8, 4, 12, 5);
+		place_exits(map, r1_x, r1_y);
+	} while (check_distp(map) < MIN_DIST * map->n_rooms || check_paths(map) == 1 || check_area(map) < (map->n_rooms * 60));
 	return map;
 }
 
@@ -62,54 +64,22 @@ kill_mapspace(struct mapspace *map)
 	free(map);
 }
 
-static double
-distp(int x1, int y1, int x2, int y2)
-{
-	int a, b;
-	double c;
-
-	/* Pythagorean theorem */
-	a = x1 - x2;
-	b = y1 - y2;
-	c = sqrt(pow(a, 2) + pow(b, 2));	
-	return c;
-}
-
-#define MIN_DIST 40
 static void
-check_distp(struct mapspace *map, int r1_x, int r1_y)
+wallify_map(struct mapspace *map, int w, int h)
 {
-	int i, j;
-	int count;
-	double dist;
-	
-	for (i = 0, count = 0, dist = 0.0; i < map->n_rooms - 1; i += 1) {
-		for (j = i + 1; j < map->n_rooms; j += 1) {
-			dist += distp(*(map->room_x + i), *(map->room_y + i), *(map->room_x + j), *(map->room_y + j));
-			count += 1;
-		}
-	}
-	dist /= count;
-	/* If rooms are too close, void them out and try to add again */
-	if (dist < MIN_DIST) {
-		for (i = 0; i < map->n_rooms; i += 1) {
-			*(map->floorspace + xy2flat(*(map->room_x + i), *(map->room_y + i), map->w)) = FLOOR_WALL;
-		}
-		free(map->room_x);
-		free(map->room_y);
-		add_rooms(map, map->n_rooms, r1_x, r1_y);
+	int i;
+
+	for (i = 0; i < w * h; i += 1) {
+		*(map->floorspace + i) = FLOOR_WALL;
+		*(map->explored + i) = 0;
 	}
 }
 
 static void
-add_rooms(struct mapspace *map, int n_rooms, int r1_x, int r1_y)
+add_rooms(struct mapspace *map, int r1_x, int r1_y)
 {
 	int i, start, x, y;
 
-	/* Initialize rooms */
-	map->n_rooms = n_rooms;
-	map->room_x = malloc(sizeof(*map->room_x) * n_rooms);
-	map->room_y = malloc(sizeof(*map->room_y) * n_rooms);
 	if (r1_x == -1) {
 		start = 0;
 	} else {
@@ -117,14 +87,12 @@ add_rooms(struct mapspace *map, int n_rooms, int r1_x, int r1_y)
 		*(map->room_x + 0) = r1_x;
 		*(map->room_y + 0) = r1_y;
 	}
-	for (i = start; i < n_rooms; i += 1) {
+	for (i = start; i < map->n_rooms; i += 1) {
 		x = rand_num(5, 94);
 		y = rand_num(2, 22);
 		*(map->room_x + i) = x;
 		*(map->room_y + i) = y;
 	}
-	/* Make sure rooms are far enough apart */
-	check_distp(map, r1_x, r1_y);
 }
 
 static void
@@ -175,38 +143,9 @@ make_path(struct mapspace *map, int room1, int room2)
 				}
 				break;
 		}
-		if (*(map->floorspace + xy2flat(x, y, map->w)) == FLOOR_WALL) *(map->floorspace + xy2flat(x, y, map->w)) = FLOOR_PATH;
+		*(map->floorspace + xy2flat(x, y, map->w)) = FLOOR_PATH;
 		if (x == *(map->room_x + room2) || y == *(map->room_y + room2)) break;
 	}
-}
-
-static int
-check_paths(struct mapspace *map)
-{
-	char *connected;
-	int changes, x, y;
-
-	/* Paint-bucket fill of connected to make sure all rooms are connected */
-	connected = malloc(sizeof(*connected) * map->w * map->h);
-	for (x = 0; x < map->w * map->h; x += 1) *(connected + x) = 0;
-	/* Set room 1 location equal to 1 */
-	*(connected + xy2flat(*(map->room_x), *(map->room_y), map->w)) = 1;
-	/* Enter a loop to fill all "1" connected tiles */
-	while (1) {
-		changes = 0;
-		for (x = 0; x < map->w; x += 1) {
-			for (y = 0; y < map->h; y += 1) {
-				if (*(connected + xy2flat(x, y, map->w)) == 1) {
-					changes += fill_point(map, connected, x, y);
-				}
-			}
-		}
-		if (changes == 0) break;
-	}
-	for (y = 0, x = 0; y < map->n_rooms; y += 1) {
-		x += *(connected + xy2flat(*(map->room_x + y), *(map->room_y + y), map->w));
-	}
-	return (x == map->n_rooms) ? 0 : 1;
 }
 
 static int
@@ -228,21 +167,8 @@ fill_point(struct mapspace *map, char *connected, int x, int y)
 	return changes;	
 }
 
-static int
-check_area(struct mapspace *map)
-{
-	int a, i;
-
-	for (i = 0, a = 0; i < map->w * map->h; i += 1) {
-		if (*(map->floorspace + i) != FLOOR_WALL) {
-			a += 1;
-		}
-	}
-	return a;
-}
-
 static void
-make_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h)
+place_rooms(struct mapspace *map, int min_w, int min_h, int max_w, int max_h)
 {
 	int i, w, h;
 	
@@ -274,12 +200,6 @@ place_room(struct mapspace *map, int x, int y, int w, int h)
 	}
 }
 
-int
-xy2flat(int x, int y, int max_w)
-{
-	return y * max_w + x;
-}
-
 static void
 place_exits(struct mapspace *map, int r1_x, int r1_y)
 {
@@ -309,4 +229,77 @@ place_exits(struct mapspace *map, int r1_x, int r1_y)
 	map->end[1] = y2;
 	*(map->floorspace + xy2flat(x1, y1, map->w)) = FLOOR_BEGIN;
 	*(map->floorspace + xy2flat(x2, y2, map->w)) = FLOOR_END;
+}
+
+static int
+check_distp(struct mapspace *map)
+{
+	int i, j;
+	int count;
+	double mapdist;
+	
+	for (i = 0, count = 0, mapdist = 0.0; i < map->n_rooms - 1; i += 1) {
+		for (j = i + 1; j < map->n_rooms; j += 1) {
+			mapdist += distp(*(map->room_x + i), *(map->room_y + i), *(map->room_x + j), *(map->room_y + j));
+			count += 1;
+		}
+	}
+	mapdist /= count;
+	return mapdist;
+}
+
+static double
+distp(int x1, int y1, int x2, int y2)
+{
+	int a, b;
+	double c;
+
+	/* Pythagorean theorem */
+	a = x1 - x2;
+	b = y1 - y2;
+	c = sqrt(pow(a, 2) + pow(b, 2));	
+	return c;
+}
+
+static int
+check_paths(struct mapspace *map)
+{
+	char *connected;
+	int changes, x, y;
+
+	/* Paint-bucket fill of connected to make sure all rooms are connected */
+	connected = malloc(sizeof(*connected) * map->w * map->h);
+	for (x = 0; x < map->w * map->h; x += 1) *(connected + x) = 0;
+	/* Set room 1 location equal to 1 */
+	*(connected + xy2flat(*(map->room_x), *(map->room_y), map->w)) = 1;
+	/* Enter a loop to fill all "1" connected tiles */
+	while (1) {
+		changes = 0;
+		for (x = 0; x < map->w; x += 1) {
+			for (y = 0; y < map->h; y += 1) {
+				if (*(connected + xy2flat(x, y, map->w)) == 1) {
+					changes += fill_point(map, connected, x, y);
+				}
+			}
+		}
+		if (changes == 0) break;
+	}
+	for (y = 0, x = 0; y < map->n_rooms; y += 1) {
+		x += *(connected + xy2flat(*(map->room_x + y), *(map->room_y + y), map->w));
+	}
+	free(connected);
+	return (x == map->n_rooms) ? 0 : 1;
+}
+
+static int
+check_area(struct mapspace *map)
+{
+	int a, i;
+
+	for (i = 0, a = 0; i < map->w * map->h; i += 1) {
+		if (*(map->floorspace + i) != FLOOR_WALL) {
+			a += 1;
+		}
+	}
+	return a;
 }

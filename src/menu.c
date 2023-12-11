@@ -22,8 +22,12 @@ main_menu(void)
 		erase();
 		draw_menu(STATE);
 		refresh();
-		usleep(8333);
+		usleep(16667);
 		switch (c) {
+			case 'b':
+			case 'B':
+				return MENU_BACK;
+				break;
 			case 'l':
 			case 'L':
 				if ((STATE & STATE_SAVE) == STATE_SAVE) {
@@ -55,5 +59,5 @@ get_gamestate(void)
 void
 set_gamestate(int state)
 {
-	STATE = (STATE & state);
+	STATE = state;
 }

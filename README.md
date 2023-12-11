@@ -21,8 +21,8 @@ QEZC - move diagonally
 
 < and > - go up and down stairs
 
-S - wait
+X - wait
 
 L - enter look mode
 
-P - quit
+M - main menu

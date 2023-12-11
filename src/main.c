@@ -11,8 +11,9 @@
 
 static void	look_cursor(int cx, int cy);
 static void	game_startup(int menu);
-static void	game_new(void);
+static void	game_new(int in_progress);
 static void	game_quit(void);
+static void	game_teardown(void);
 
 struct mapspace **MAP_WALLET = NULL;
 struct mapspace *MAP = NULL;
@@ -35,7 +36,6 @@ main(void)
 	menu = main_menu();
 	/* Act on menu options returned */
 	game_startup(menu);
-	erase();
 	/* input loop */
 	update = 1;
 	while (1) {
@@ -47,8 +47,7 @@ main(void)
 			draw_character(PLAYER->x, PLAYER->y);
 			draw_commands(0);
 			draw_playerinfo(PLAYER);
-			draw_log();
-			update = 0;
+			draw_log(0);
 		}
 		/* Get input and sleep for 1/60th of a second */
 		c = getch();
@@ -105,6 +104,15 @@ main(void)
 			case 'P':
 				game_quit();
 				break;
+			case 'm':
+			case 'M':
+				menu = main_menu();
+				if (menu == MENU_QUIT) {
+					game_quit();
+				} else if (menu == MENU_NEW) {
+					game_new(1);
+				}
+				break;
 			default:
 				/* No input of consequence was received, don't update */
 				update = 0;
@@ -124,7 +132,7 @@ look_cursor(int cx, int cy)
 	draw_commands(1);
 	draw_playerinfo(PLAYER);
 	print_mapspace(MAP, PLAYER);
-	draw_log();
+	draw_log(0);
 	draw_character(cx, cy);
 	/* Set cursor on character */
 	x = cx;
@@ -187,20 +195,27 @@ static void
 game_startup(int menu)
 {
 	if (menu == MENU_NEW) {
-		game_new();
+		game_new(0);
 	} else if (menu == MENU_LOAD) {
 		N_MAPS = load_save(&MAP_WALLET, &PLAYER);
+		set_gamestate(STATE_PROGRESS);
 	} else if (menu == MENU_QUIT) {
 		game_quit();
 	}
 }
 
 static void
-game_new(void)
+game_new(int in_progress)
 {
 	char message[1024];
 	int i, prev_x, prev_y;
 
+	/* If game is in progress, tear down existing game without saving
+	 * and re-initialize the message log */
+	if (in_progress == 1) {
+		game_teardown();
+		init_log();
+	}
 	/* make maps */
 	MAP_WALLET = malloc(sizeof(*MAP_WALLET) * N_MAPS);
 	prev_x = -1; prev_y = -1;
@@ -214,6 +229,7 @@ game_new(void)
 	MAP = *(MAP_WALLET + 0);
 	/* place the character on the entrance */
 	PLAYER = init_playerspace(MAP, MAP->begin[0], MAP->begin[1]);
+	erase();
 }
 
 static void
@@ -235,4 +251,22 @@ game_quit(void)
 	}
 	kill_curses();
 	exit(0);
+}
+
+static void
+game_teardown(void)
+{
+	int i;
+	struct mapspace *map;
+
+	if (PLAYER != NULL) kill_playerspace(PLAYER);
+	PLAYER = NULL;
+	if (MAP_WALLET != NULL) {
+		for (i = 0; i < N_MAPS; i += 1) {
+			map = *(MAP_WALLET + i);
+			kill_mapspace(map);
+		}
+		free(MAP_WALLET);
+	}
+	MAP_WALLET = NULL;
 }
