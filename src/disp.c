@@ -4,6 +4,7 @@
 #include "libs.h"
 #include "map.h"
 #include "menu.h"
+#include "npcs.h"
 #include "player.h"
 
 #define ADD_X 1
@@ -182,6 +183,20 @@ format_time(int cur_time, char time_f[20])
 }
 
 void
+draw_npcs(struct npc_info npcs, struct mapspace *map, struct playerspace *player)
+{
+	int i, x, y;
+
+	for (i = 0; i < npcs.n_npcs; i += 1) {
+		x = *(npcs.x + i);
+		y = *(npcs.y + i);
+		if (*(player->vis + xy2flat(x, y, map->w)) != 0) {
+			mvaddch(*(npcs.y + i) + ADD_Y, *(npcs.x + i) + ADD_X, '$');
+		}
+	}
+}
+
+void
 draw_menu(int state)
 {
 	int line;
@@ -277,7 +292,7 @@ void
 add_log(char *mesg)
 {
 	int m_len, n_lines;
-	
+
 	/* Calculate number of lines the message will require */
 	m_len = strnlen(mesg, 1000);
 	n_lines = m_len / MESG_LEN;

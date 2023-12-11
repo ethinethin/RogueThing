@@ -19,7 +19,7 @@ static int	check_area(struct mapspace *map);
 
 char *floor_names[7] = { "Open floor", "Stone wall", "Open path", "", "Door", "A staircase down", "A staircase up" };
 
-#define MIN_DIST 4.2
+#define MIN_DIST 4.3
 
 int
 xy2flat(int x, int y, int max_w)
@@ -48,7 +48,7 @@ init_mapspace(int w, int h, int floor_n, int r1_x, int r1_y)
 		make_paths(map);
 		place_rooms(map, 8, 4, 12, 5);
 		place_exits(map, r1_x, r1_y);
-	} while (check_distp(map) < MIN_DIST * map->n_rooms || check_paths(map) == 1 || check_area(map) < (map->n_rooms * 60));
+	} while (check_distp(map) < MIN_DIST * map->n_rooms || check_paths(map) == 1 || check_area(map) < (map->n_rooms * 70));
 	return map;
 }
 

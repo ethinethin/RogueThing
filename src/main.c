@@ -5,6 +5,7 @@
 #include "libs.h"
 #include "map.h"
 #include "menu.h"
+#include "npcs.h"
 #include "player.h"
 #include "rand.h"
 #include "save.h"
@@ -25,6 +26,7 @@ main(void)
 {
 	int c, menu, update;
 	long int seed;
+	struct npc_info cur_npcs;
 
 	/* seed rng */
 	seed = seed_rng();
@@ -32,6 +34,8 @@ main(void)
 	/* Initialize curses, the message log, & the menu, then go to the main menu */
 	init_curses();
 	init_log();
+	cur_npcs.n_npcs = 0;
+	cur_npcs.x = NULL;
 	init_menu();
 	menu = main_menu();
 	/* Act on menu options returned */
@@ -45,6 +49,8 @@ main(void)
 			check_vis(MAP, PLAYER);
 			print_mapspace(MAP, PLAYER);
 			draw_character(PLAYER->x, PLAYER->y);
+			npcs_info(MAP->cur_floor, &cur_npcs);
+			draw_npcs(cur_npcs, MAP, PLAYER);
 			draw_commands(0);
 			draw_playerinfo(PLAYER);
 			draw_log(0);
@@ -127,7 +133,11 @@ look_cursor(int cx, int cy)
 {
 	char on_player;
 	int c, x, y;
+	struct npc_info cur_npcs;
 
+	/* Get npc_info read */
+	cur_npcs.n_npcs = 0;
+	cur_npcs.x = NULL;
 	/* Draw initial screen */
 	draw_commands(1);
 	draw_playerinfo(PLAYER);
@@ -143,6 +153,8 @@ look_cursor(int cx, int cy)
 		} else {
 			on_player = 0;
 		}
+		npcs_info(MAP->cur_floor, &cur_npcs);
+		draw_npcs(cur_npcs, MAP, PLAYER);
 		draw_look(*(MAP->floorspace + xy2flat(x, y, MAP->w)), *(MAP->explored + xy2flat(x, y, MAP->w)), on_player);
 		draw_cursor(x, y);
 		usleep(16667);
@@ -229,6 +241,8 @@ game_new(int in_progress)
 	MAP = *(MAP_WALLET + 0);
 	/* place the character on the entrance */
 	PLAYER = init_playerspace(MAP, MAP->begin[0], MAP->begin[1]);
+	/* Initialize the NPCs */
+	init_npcspace(MAP_WALLET, N_MAPS, 5);
 	erase();
 }
 
@@ -249,6 +263,7 @@ game_quit(void)
 		}
 		free(MAP_WALLET);
 	}
+	kill_npcspace();
 	kill_curses();
 	exit(0);
 }
@@ -269,4 +284,5 @@ game_teardown(void)
 		free(MAP_WALLET);
 	}
 	MAP_WALLET = NULL;
+	kill_npcspace();
 }

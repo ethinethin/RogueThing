@@ -8,7 +8,6 @@
 
 #define TIME_TICK 10
 
-static void	rando_name(char name[18]);
 static void	clear_vis(struct mapspace *map, struct playerspace *player);
 static void	vis_room(struct mapspace *map, struct playerspace *player);
 static int	fill_point(struct mapspace *map, char *vis, int x, int y);
@@ -92,7 +91,7 @@ move_player(struct mapspace *map, struct playerspace *player, int cx, int cy)
 	add_log(mesg);
 }
 
-static void
+void
 rando_name(char name[18])
 {
 	char *consonants[] = { "b", "bl", "c", "cl", "cr", "d", "fl", "fr", "g", "gl",
