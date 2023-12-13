@@ -25,7 +25,7 @@ init_curses(void)
 {
 	/* Initialize curses and check window size/color availability */
 	initscr();
-	//check_window();
+	check_window();
 	init_colors();
 	/* Curses settings: raw mode, no input echo, no delay on input,
 	 * extended keypad input, and visible cursor off */

@@ -5,6 +5,8 @@ CFILES=./src/*.c
 
 default:
 	$(CC) -o $(TARGET) $(CFILES) $(CFLAGS)
+opt:
+	$(CC) -o $(TARGET)_opt $(CFILES) $(CFLAGS) -O3
 clean:
 	rm -f $(TARGET)
 debug:
