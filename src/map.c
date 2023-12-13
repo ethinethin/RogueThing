@@ -3,6 +3,7 @@
 #include "libs.h"
 #include "map.h"
 #include "rand.h"
+#include "types.h"
 
 static void	wallify_map(struct mapspace *map, int w, int h);
 static void	add_rooms(struct mapspace *map, int r1_x, int r1_y);

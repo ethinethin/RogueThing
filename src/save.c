@@ -2,12 +2,16 @@
 #include <stdlib.h>
 #include "map.h"
 #include "menu.h"
+#include "npcs.h"
 #include "player.h"
+#include "types.h"
 
 static void	save_maps(struct mapspace **mapwallet, int n_maps, FILE *f);
 static void	save_player(struct playerspace *player, FILE *f);
+static void	save_npcs(FILE *f);
 static int	load_maps(struct mapspace ***mapwallet, FILE *f);
 static void	load_player(struct playerspace **player, FILE *f, struct mapspace *map);
+static void	load_npcs(FILE *f);
 
 int
 save_exists(void)
@@ -39,6 +43,7 @@ quit_save(struct mapspace **mapwallet, struct playerspace *player, int n_maps)
 	}
 	save_maps(mapwallet, n_maps, f);
 	save_player(player, f);
+	save_npcs(f);
 	fclose(f);
 }
 
@@ -78,6 +83,20 @@ save_player(struct playerspace *player, FILE *f)
 	fprintf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", player->stats.level, player->stats.hp, player->stats.maxhp, player->stats.sp, player->stats.maxsp, player->stats.pa, player->stats.pd, player->stats.ra, player->stats.rd, player->stats.bp, player->stats.ep);
 }
 
+static void
+save_npcs(FILE *f)
+{
+	char npc_stats[1024];
+	int i, n_npcs;
+
+	n_npcs = get_n_npcs();
+	fprintf(f, "%d\n", n_npcs);
+	for (i = 0; i < n_npcs; i += 1) {
+		format_npc_for_saving(i, npc_stats);
+		fprintf(f, "%s", npc_stats);
+	}
+}
+
 int
 load_save(struct mapspace ***mapwallet, struct playerspace **player)
 {
@@ -87,6 +106,7 @@ load_save(struct mapspace ***mapwallet, struct playerspace **player)
 	f = fopen("game.dat", "r");
 	n_maps = load_maps(mapwallet, f);
 	load_player(player, f, **mapwallet);
+	load_npcs(f);
 	fclose(f);
 	return n_maps;
 }
@@ -136,4 +156,18 @@ load_player(struct playerspace **player, FILE *f, struct mapspace *map)
 	fscanf(f, "%d %d %d %d %s\n", &p->x, &p->y, &p->cur_floor, &p->cur_time, p->name);
 	p->vis = malloc(sizeof(*p->vis) * map->w * map->h);
 	fscanf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", &p->stats.level, &p->stats.hp, &p->stats.maxhp, &p->stats.sp, &p->stats.maxsp, &p->stats.pa, &p->stats.pd, &p->stats.ra, &p->stats.rd, &p->stats.bp, &p->stats.ep);
+}
+
+static void
+load_npcs(FILE *f)
+{
+	char name[20];
+	int i, n_npcs, stats[15];
+
+	fscanf(f, "%d\n", &n_npcs);
+	for (i = 0; i < n_npcs; i += 1) {
+		fscanf(f, "%d %d %d %s %d\n", &stats[0], &stats[1], &stats[2], name, &stats[3]);
+		fscanf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", &stats[4], &stats[5], &stats[6], &stats[7], &stats[8], &stats[9], &stats[10], &stats[11], &stats[12], &stats[13], &stats[14]);
+		add_loaded_npc(n_npcs, i, name, stats);
+	}
 }

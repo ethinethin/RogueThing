@@ -3,8 +3,10 @@
 #include "disp.h"
 #include "libs.h"
 #include "map.h"
+#include "npcs.h"
 #include "player.h"
 #include "rand.h"
+#include "types.h"
 
 #define TIME_TICK 10
 
@@ -51,18 +53,27 @@ kill_playerspace(struct playerspace *player)
 } 
 
 void
-move_player(struct mapspace *map, struct playerspace *player, int cx, int cy)
+move_player(struct mapspace *map, struct playerspace *player, struct npc_info npcs, int cx, int cy)
 {
 	char mesg[200];
-	int x, y;
+	int i, x, y;
 
 	/* Change coordinates */
 	x = player->x + cx;
 	y = player->y + cy;
 	/* Make sure it is on the map */
 	if (x < 0 || x > map->w - 1 || y < 0 || y > map->h - 1) return;
-	/* If floor type is WALL, don't go changin' */
-	if (*(map->floorspace + xy2flat(x, y, 100)) == FLOOR_WALL) return;
+	/* If floor type is WALL, or NPC is standin' there, don't go changin' */
+	if (*(map->floorspace + xy2flat(x, y, 100)) == FLOOR_WALL) {
+		add_log("THUD!");
+		return;
+	}
+	for (i = 0; i < npcs.n_npcs; i += 1) {
+		if (*(npcs.x + i) == x && *(npcs.y + i) == y) {
+			add_log("THUD!");
+			return;
+		}
+	}
 	/* Otherwise, make the change and increase the time */
 	player->x = x;
 	player->y = y;

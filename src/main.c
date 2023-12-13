@@ -9,6 +9,7 @@
 #include "player.h"
 #include "rand.h"
 #include "save.h"
+#include "types.h"
 
 static void	look_cursor(int cx, int cy);
 static void	game_startup(int menu);
@@ -18,15 +19,15 @@ static void	game_teardown(void);
 
 struct mapspace **MAP_WALLET = NULL;
 struct mapspace *MAP = NULL;
-struct playerspace *PLAYER = NULL;
 int N_MAPS = 100;
+struct playerspace *PLAYER = NULL;
+struct npc_info CUR_NPCS;
 
 int
 main(void)
 {
 	int c, menu, update;
 	long int seed;
-	struct npc_info cur_npcs;
 
 	/* seed rng */
 	seed = seed_rng();
@@ -34,8 +35,9 @@ main(void)
 	/* Initialize curses, the message log, & the menu, then go to the main menu */
 	init_curses();
 	init_log();
-	cur_npcs.n_npcs = 0;
-	cur_npcs.x = NULL;
+	CUR_NPCS.n_npcs = 0;
+	CUR_NPCS.x = NULL;
+	CUR_NPCS.y = NULL;
 	init_menu();
 	menu = main_menu();
 	/* Act on menu options returned */
@@ -49,8 +51,8 @@ main(void)
 			check_vis(MAP, PLAYER);
 			print_mapspace(MAP, PLAYER);
 			draw_character(PLAYER->x, PLAYER->y);
-			npcs_info(MAP->cur_floor, &cur_npcs);
-			draw_npcs(cur_npcs, MAP, PLAYER);
+			npcs_info(MAP->cur_floor, &CUR_NPCS);
+			draw_npcs(CUR_NPCS, MAP, PLAYER);
 			draw_commands(0);
 			draw_playerinfo(PLAYER);
 			draw_log(0);
@@ -62,39 +64,39 @@ main(void)
 		switch (c) {
 			case 'q':
 			case 'Q':
-				move_player(MAP, PLAYER, -1, -1);
+				move_player(MAP, PLAYER, CUR_NPCS, -1, -1);
 				break;
 			case 'w':
 			case 'W':
-				move_player(MAP, PLAYER, 0, -1);
+				move_player(MAP, PLAYER, CUR_NPCS, 0, -1);
 				break;
 			case 'e':
 			case 'E':
-				move_player(MAP, PLAYER, 1, -1);
+				move_player(MAP, PLAYER, CUR_NPCS, 1, -1);
 				break;
 			case 'a':
 			case 'A':
-				move_player(MAP, PLAYER, -1, 0);
+				move_player(MAP, PLAYER, CUR_NPCS, -1, 0);
 				break;
 			case 's':
 			case 'S':
-				move_player(MAP, PLAYER, 0, 1);
+				move_player(MAP, PLAYER, CUR_NPCS, 0, 1);
 				break;
 			case 'd':
 			case 'D':
-				move_player(MAP, PLAYER, 1, 0);
+				move_player(MAP, PLAYER, CUR_NPCS, 1, 0);
 				break;
 			case 'z':
 			case 'Z':
-				move_player(MAP, PLAYER, -1, 1);
+				move_player(MAP, PLAYER, CUR_NPCS, -1, 1);
 				break;
 			case 'x':
 			case 'X':
-				move_player(MAP, PLAYER, 0, 0);
+				move_player(MAP, PLAYER, CUR_NPCS, 0, 0);
 				break;
 			case 'c':
 			case 'C':
-				move_player(MAP, PLAYER, 1, 1);
+				move_player(MAP, PLAYER, CUR_NPCS, 1, 1);
 				break;
 			case 'l':
 			case 'L':
@@ -132,18 +134,16 @@ static void
 look_cursor(int cx, int cy)
 {
 	char on_player;
-	int c, x, y;
-	struct npc_info cur_npcs;
+	int c, x, y, xyflat;
 
-	/* Get npc_info read */
-	cur_npcs.n_npcs = 0;
-	cur_npcs.x = NULL;
 	/* Draw initial screen */
 	draw_commands(1);
 	draw_playerinfo(PLAYER);
 	print_mapspace(MAP, PLAYER);
 	draw_log(0);
 	draw_character(cx, cy);
+	npcs_info(MAP->cur_floor, &CUR_NPCS);
+	draw_npcs(CUR_NPCS, MAP, PLAYER);
 	/* Set cursor on character */
 	x = cx;
 	y = cy;
@@ -153,9 +153,8 @@ look_cursor(int cx, int cy)
 		} else {
 			on_player = 0;
 		}
-		npcs_info(MAP->cur_floor, &cur_npcs);
-		draw_npcs(cur_npcs, MAP, PLAYER);
-		draw_look(*(MAP->floorspace + xy2flat(x, y, MAP->w)), *(MAP->explored + xy2flat(x, y, MAP->w)), on_player);
+		xyflat = xy2flat(x, y, MAP->w);
+		draw_look(*(MAP->floorspace + xyflat), *(MAP->explored + xyflat), *(PLAYER->vis + xyflat), on_player, CUR_NPCS, x, y);
 		draw_cursor(x, y);
 		usleep(16667);
 		switch (c) {
@@ -201,16 +200,18 @@ look_cursor(int cx, int cy)
 		}
 	}
 	curs_set(0);
+	erase();
 }
 
 static void
 game_startup(int menu)
 {
 	if (menu == MENU_NEW) {
+		set_gamestate(STATE_PROGRESS);
 		game_new(0);
 	} else if (menu == MENU_LOAD) {
-		N_MAPS = load_save(&MAP_WALLET, &PLAYER);
 		set_gamestate(STATE_PROGRESS);
+		N_MAPS = load_save(&MAP_WALLET, &PLAYER);
 	} else if (menu == MENU_QUIT) {
 		game_quit();
 	}

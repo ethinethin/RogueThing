@@ -3,6 +3,7 @@
 #include "libs.h"
 #include "menu.h"
 #include "save.h"
+#include "types.h"
 
 int STATE;
 

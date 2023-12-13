@@ -6,12 +6,14 @@
 #include "menu.h"
 #include "npcs.h"
 #include "player.h"
+#include "types.h"
 
 #define ADD_X 1
 #define ADD_Y 1
 
 static void	check_window(void);
 static void	init_colors(void);
+static int	on_npc(int x, int y, struct npc_info npcs);
 static void	format_time(int cur_time, char time_f[20]);
 static void	scroll_log(int n_lines);
 static void	add_mesg(char *mesg, int n_lines);
@@ -23,7 +25,7 @@ init_curses(void)
 {
 	/* Initialize curses and check window size/color availability */
 	initscr();
-	check_window();
+	//check_window();
 	init_colors();
 	/* Curses settings: raw mode, no input echo, no delay on input,
 	 * extended keypad input, and visible cursor off */
@@ -136,9 +138,9 @@ draw_commands(int mode)
 }
 
 void
-draw_look(int floorspace, char vis, char on_player)
+draw_look(int floorspace, char explored, char vis, char on_player, struct npc_info npcs, int x, int y)
 {
-	int i;
+	int i, n;
 
 	/* Clear the look line */
 	move(28, 0);
@@ -146,11 +148,28 @@ draw_look(int floorspace, char vis, char on_player)
 	/* Report what is under the cursor */
 	if (on_player == 1) {
 		mvprintw(28, 1, "You see: yourself");
-	} else if (vis == 0) {
+	} else if (explored == 0) {
 		mvprintw(28, 1, "You see: unexplored");
-	} else {
+	} else if ((n = on_npc(x, y, npcs)) != -1) {
+		mvprintw(28, 1, "You see: %s", get_name(n));
+	} else if (vis > 0) {
 		mvprintw(28, 1, "You see: %s", floor_names[floorspace]);
+	} else {
+		mvprintw(28, 1, "You see: %s (not currently visible)", floor_names[floorspace]);
 	}
+}
+
+static int
+on_npc(int x, int y, struct npc_info npcs)
+{
+	int i;
+
+	for (i = 0; i < npcs.n_npcs; i += 1) {
+		if (*(npcs.x + i) == x && *(npcs.y + i) == y) {
+			return *(npcs.i + i);
+		}
+	}
+	return -1;
 }
 
 void
