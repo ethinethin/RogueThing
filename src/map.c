@@ -18,7 +18,7 @@ static double	distp(int x1, int y1, int x2, int y2);
 static int	check_paths(struct mapspace *map);
 static int	check_area(struct mapspace *map);
 
-char *floor_names[7] = { "Open floor", "Stone wall", "Open path", "", "Door", "A staircase down", "A staircase up" };
+char *floor_names[7] = { "Stone floor", "Stone wall", "Dark tunnel", "", "Door", "A staircase down", "A staircase up" };
 
 #define MIN_DIST 4.3
 

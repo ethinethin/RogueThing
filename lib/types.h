@@ -20,12 +20,12 @@ struct stats {
 	int maxhp;
 	int sp;
 	int maxsp;
-	int pa;
-	int pd;
-	int ra;
-	int rd;
+	int attack;
+	int defense;
+	int hit;
+	int dodge;
 	int bp;
-	int ep;
+	int xp;
 };
 
 struct playerspace {
@@ -44,6 +44,7 @@ struct npcspace {
 	int cur_floor;
 	char name[18];
 	int personality;
+	int is_hostile;
 	struct stats stats;
 };
 

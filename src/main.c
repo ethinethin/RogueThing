@@ -50,9 +50,9 @@ main(void)
 			/* Only redraw screen if user input was received */
 			check_vis(MAP, PLAYER);
 			print_mapspace(MAP, PLAYER);
-			draw_character(PLAYER->x, PLAYER->y);
 			npcs_info(MAP->cur_floor, &CUR_NPCS);
-			draw_npcs(CUR_NPCS, MAP, PLAYER);
+			draw_npcs(MAP, PLAYER, CUR_NPCS);
+			draw_character(PLAYER->x, PLAYER->y);
 			draw_commands(0);
 			draw_playerinfo(PLAYER);
 			draw_log(0);
@@ -141,9 +141,9 @@ look_cursor(int cx, int cy)
 	draw_playerinfo(PLAYER);
 	print_mapspace(MAP, PLAYER);
 	draw_log(0);
-	draw_character(cx, cy);
 	npcs_info(MAP->cur_floor, &CUR_NPCS);
-	draw_npcs(CUR_NPCS, MAP, PLAYER);
+	draw_npcs(MAP, PLAYER, CUR_NPCS);
+	draw_character(cx, cy);
 	/* Set cursor on character */
 	x = cx;
 	y = cy;
@@ -243,7 +243,7 @@ game_new(int in_progress)
 	/* place the character on the entrance */
 	PLAYER = init_playerspace(MAP, MAP->begin[0], MAP->begin[1]);
 	/* Initialize the NPCs */
-	init_npcspace(MAP_WALLET, N_MAPS, 5);
+	init_npcspace(MAP_WALLET, N_MAPS, 10);
 	erase();
 }
 

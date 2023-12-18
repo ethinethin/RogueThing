@@ -14,6 +14,10 @@ static void	clear_vis(struct mapspace *map, struct playerspace *player);
 static void	vis_room(struct mapspace *map, struct playerspace *player);
 static int	fill_point(struct mapspace *map, char *vis, int x, int y);
 static void	update_explored(struct mapspace *map, struct playerspace *player);
+static int	level_up(struct playerspace *player);
+static int	determine_level(int current_xp);
+
+int DAY;
 
 struct playerspace *
 init_playerspace(struct mapspace *map, int x, int y)
@@ -36,12 +40,14 @@ init_playerspace(struct mapspace *map, int x, int y)
 	player->stats.maxhp = 10;
 	player->stats.sp = 10;
 	player->stats.maxsp = 10;
-	player->stats.pa = 10;
-	player->stats.pd = 10;
-	player->stats.ra = 10;
-	player->stats.rd = 10;
+	player->stats.attack = 10;
+	player->stats.defense = 10;
+	player->stats.hit = 10;
+	player->stats.dodge = 10;
 	player->stats.bp = 10;
-	player->stats.ep = 0;
+	player->stats.xp = 0;
+	/* We're on the first day */
+	DAY = 0;
 	return player;
 }
 
@@ -50,13 +56,19 @@ kill_playerspace(struct playerspace *player)
 {
 	free(player->vis);
 	free(player);
-} 
+}
+
+void
+load_day(int cur_time)
+{
+	DAY = cur_time / 1440;
+}
 
 void
 move_player(struct mapspace *map, struct playerspace *player, struct npc_info npcs, int cx, int cy)
 {
 	char mesg[200];
-	int i, x, y;
+	int i, level, x, y;
 
 	/* Change coordinates */
 	x = player->x + cx;
@@ -64,42 +76,50 @@ move_player(struct mapspace *map, struct playerspace *player, struct npc_info np
 	/* Make sure it is on the map */
 	if (x < 0 || x > map->w - 1 || y < 0 || y > map->h - 1) return;
 	/* If floor type is WALL, or NPC is standin' there, don't go changin' */
-	if (*(map->floorspace + xy2flat(x, y, 100)) == FLOOR_WALL) {
+	if (*(map->floorspace + xy2flat(x, y, map->w)) == FLOOR_WALL) {
 		add_log("THUD!");
 		return;
 	}
+	/* If you're stepping on top of an NPC, check their is_hostile status
+	 * and is_alive status. Three outcomes:
+	 * 	Non-hostile, alive - swap places
+	 *	Hostile, alive - combat
+	 *	Either, dead - step on top 					*/
 	for (i = 0; i < npcs.n_npcs; i += 1) {
 		if (*(npcs.x + i) == x && *(npcs.y + i) == y) {
-			add_log("THUD!");
-			return;
+			if (is_hostile(*(npcs.i + i)) == 0 && is_alive(*(npcs.i + i)) == 1) {
+				sprintf(mesg, "You swapped spaces with %s.", get_name(*(npcs.i + i)));
+				add_log(mesg);
+				swap_spaces(player, *(npcs.i + i));
+			} else if (is_hostile(*(npcs.i + i)) == 1 && is_alive(*(npcs.i + i)) == 1) {
+				/* Combat .. eventually .. will go here */
+				player->stats.xp += kill_enemy(*(npcs.i + i));
+				sprintf(mesg, "Oh my God! You killed %s!", get_name(*(npcs.i + i)));
+				add_log(mesg);
+				x = player->x;
+				y = player->y;
+			}
 		}
 	}
 	/* Otherwise, make the change and increase the time */
 	player->x = x;
 	player->y = y;
 	player->cur_time += TIME_TICK;
-
-	// REMOVE THIS STUFF LATER - THIS IS JUST FOR PROOF OF CONCEPT
-	if (cx == 0 && cy == -1) {
-		sprintf(mesg, "You moved north.");
-	} else if (cx == 1 && cy == 0) {
-		sprintf(mesg, "You moved east.");
-	} else if (cx == 0 && cy == 1) {
-		sprintf(mesg, "You moved south.");
-	} else if (cx == -1 && cy == 0) {
-		sprintf(mesg, "You moved west.");
-	} else if (cx == 1 && cy == -1) {
-		sprintf(mesg, "You moved northeast.");
-	} else if (cx == 1 && cy == 1) {
-		sprintf(mesg, "You moved southeast.");
-	} else if (cx == -1 && cy == -1) {
-		sprintf(mesg, "You moved northwest.");
-	} else if (cx == -1 && cy == 1) {
-		sprintf(mesg, "You moved southwest.");
-	} else {
-		sprintf(mesg, "You did not move.");
+	if (player->cur_time / 1440 != DAY) {
+		DAY = player->cur_time / 1440;
+		upgrade_all_npcs();
+		add_log("One more day has passed in the tower. All enemies have gotten stronger...");
 	}
-	add_log(mesg);
+	level = level_up(player);
+	if (level != -1) {
+		sprintf(mesg, "Congratulations! You leveled up to level %d!", level);
+		add_log(mesg);
+	}
+	/* Did they "wait"? */
+	if (cx == 0 && cy == 0) {
+		add_log("You waited for one turn.");
+	}
+	move_all_npcs(map, player, npcs);
 }
 
 void
@@ -246,3 +266,31 @@ update_explored(struct mapspace *map, struct playerspace *player)
 		}
 	}
 }	
+
+static int
+level_up(struct playerspace *player)
+{
+	int level;
+
+	level = determine_level(player->stats.xp);
+	if (level != player->stats.level) {
+		player->stats.level = level;
+		return level;
+	} else {
+		return -1;
+	}
+}
+
+static int
+determine_level(int current_xp)
+{
+	int level, xp;
+
+	for (level = 1, xp = 0; level < 1000; level += 1) {
+		xp += level * 5;
+		if (xp > current_xp) {
+			break;
+		}
+	}
+	return level;
+}

@@ -13,7 +13,7 @@
 
 static void	check_window(void);
 static void	init_colors(void);
-static int	on_npc(int x, int y, struct npc_info npcs);
+static int	cursor_on_npc(int x, int y, struct npc_info npcs);
 static void	format_time(int cur_time, char time_f[20]);
 static void	scroll_log(int n_lines);
 static void	add_mesg(char *mesg, int n_lines);
@@ -61,7 +61,9 @@ init_colors(void)
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLACK);
 	init_pair(2, COLOR_BLUE, COLOR_BLACK);
-	init_pair(3, COLOR_CYAN, COLOR_BLACK);
+	init_pair(3, COLOR_RED, COLOR_BLACK);
+	init_pair(4, COLOR_CYAN, COLOR_BLACK);
+	init_pair(5, COLOR_CYAN, COLOR_BLACK);
 }
 
 void
@@ -150,8 +152,9 @@ draw_look(int floorspace, char explored, char vis, char on_player, struct npc_in
 		mvprintw(28, 1, "You see: yourself");
 	} else if (explored == 0) {
 		mvprintw(28, 1, "You see: unexplored");
-	} else if ((n = on_npc(x, y, npcs)) != -1) {
-		mvprintw(28, 1, "You see: %s", get_name(n));
+	} else if ((n = cursor_on_npc(x, y, npcs)) != -1) {
+		mvprintw(28, 1, "You see: %s (%s)", get_name(n),
+		(is_alive(n) == 0) ? "dead" : (is_hostile(n) == 0) ? "friendly" : "hostile");
 	} else if (vis > 0) {
 		mvprintw(28, 1, "You see: %s", floor_names[floorspace]);
 	} else {
@@ -160,7 +163,7 @@ draw_look(int floorspace, char explored, char vis, char on_player, struct npc_in
 }
 
 static int
-on_npc(int x, int y, struct npc_info npcs)
+cursor_on_npc(int x, int y, struct npc_info npcs)
 {
 	int i;
 
@@ -202,15 +205,27 @@ format_time(int cur_time, char time_f[20])
 }
 
 void
-draw_npcs(struct npc_info npcs, struct mapspace *map, struct playerspace *player)
+draw_npcs(struct mapspace *map, struct playerspace *player, struct npc_info npcs)
 {
+	char c;
 	int i, x, y;
 
 	for (i = 0; i < npcs.n_npcs; i += 1) {
 		x = *(npcs.x + i);
 		y = *(npcs.y + i);
 		if (*(player->vis + xy2flat(x, y, map->w)) != 0) {
-			mvaddch(*(npcs.y + i) + ADD_Y, *(npcs.x + i) + ADD_X, '$');
+			/* If they're hostile, they should be red */
+			if (is_hostile(*(npcs.i + i)) == 1 && is_alive(*(npcs.i + i)) == 1) {
+				attron(COLOR_PAIR(3));
+			} else if (is_hostile(*(npcs.i + i)) == 1 && is_alive(*(npcs.i + i)) == 0) {
+				attron(COLOR_PAIR(4));
+			} else {
+				attron(COLOR_PAIR(5));
+			}
+			/* If they're dead, they should be a corpse */
+			c = (is_alive(*(npcs.i + i)) == 1) ? '$' : 'c';
+			mvaddch(*(npcs.y + i) + ADD_Y, *(npcs.x + i) + ADD_X, c);
+			attron(COLOR_PAIR(1));
 		}
 	}
 }

@@ -80,7 +80,7 @@ static void
 save_player(struct playerspace *player, FILE *f)
 {
 	fprintf(f, "%d %d %d %d %s\n", player->x, player->y, player->cur_floor, player->cur_time, player->name);
-	fprintf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", player->stats.level, player->stats.hp, player->stats.maxhp, player->stats.sp, player->stats.maxsp, player->stats.pa, player->stats.pd, player->stats.ra, player->stats.rd, player->stats.bp, player->stats.ep);
+	fprintf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", player->stats.level, player->stats.hp, player->stats.maxhp, player->stats.sp, player->stats.maxsp, player->stats.attack, player->stats.defense, player->stats.hit, player->stats.dodge, player->stats.bp, player->stats.xp);
 }
 
 static void
@@ -155,19 +155,19 @@ load_player(struct playerspace **player, FILE *f, struct mapspace *map)
 	p = *player;
 	fscanf(f, "%d %d %d %d %s\n", &p->x, &p->y, &p->cur_floor, &p->cur_time, p->name);
 	p->vis = malloc(sizeof(*p->vis) * map->w * map->h);
-	fscanf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", &p->stats.level, &p->stats.hp, &p->stats.maxhp, &p->stats.sp, &p->stats.maxsp, &p->stats.pa, &p->stats.pd, &p->stats.ra, &p->stats.rd, &p->stats.bp, &p->stats.ep);
+	fscanf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", &p->stats.level, &p->stats.hp, &p->stats.maxhp, &p->stats.sp, &p->stats.maxsp, &p->stats.attack, &p->stats.defense, &p->stats.hit, &p->stats.dodge, &p->stats.bp, &p->stats.xp);
+	load_day(p->cur_time);
 }
 
 static void
 load_npcs(FILE *f)
 {
 	char name[20];
-	int i, n_npcs, stats[15];
+	int i, n_npcs, stats[16];
 
 	fscanf(f, "%d\n", &n_npcs);
 	for (i = 0; i < n_npcs; i += 1) {
-		fscanf(f, "%d %d %d %s %d\n", &stats[0], &stats[1], &stats[2], name, &stats[3]);
-		fscanf(f, "%d %d %d %d %d %d %d %d %d %d %d\n", &stats[4], &stats[5], &stats[6], &stats[7], &stats[8], &stats[9], &stats[10], &stats[11], &stats[12], &stats[13], &stats[14]);
+		fscanf(f, "%d %d %d %s %d %d %d %d %d %d %d %d %d %d %d %d %d\n", &stats[0], &stats[1], &stats[2], name, &stats[3], &stats[4], &stats[5], &stats[6], &stats[7], &stats[8], &stats[9], &stats[10], &stats[11], &stats[12], &stats[13], &stats[14], &stats[15]);
 		add_loaded_npc(n_npcs, i, name, stats);
 	}
 }
