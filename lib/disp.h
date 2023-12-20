@@ -14,6 +14,7 @@ extern void	draw_playerinfo(struct playerspace *player);
 extern void	draw_npcs(struct mapspace *map, struct playerspace *player, struct npc_info npcs);
 extern void	draw_menu(int state);
 extern void	draw_progress(char *message, int x, int y, int progress);
+extern void	draw_charscreen(struct playerspace *player, struct stats dstats);
 extern void	init_log(void);
 extern void	draw_log(int adj);
 extern void	add_log(char *mesg);

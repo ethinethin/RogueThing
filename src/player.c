@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include "combat.h"
 #include "disp.h"
 #include "libs.h"
 #include "map.h"
@@ -93,9 +94,8 @@ move_player(struct mapspace *map, struct playerspace *player, struct npc_info np
 				swap_spaces(player, *(npcs.i + i));
 			} else if (is_hostile(*(npcs.i + i)) == 1 && is_alive(*(npcs.i + i)) == 1) {
 				/* Combat .. eventually .. will go here */
-				player->stats.xp += kill_enemy(*(npcs.i + i));
-				sprintf(mesg, "Oh my God! You killed %s!", get_name(*(npcs.i + i)));
-				add_log(mesg);
+				player->stats.xp += player_attack(player, *(npcs.i + i));
+				if (is_alive(*(npcs.i + i)) == 1) npc_attack(player, *(npcs.i + i));
 				x = player->x;
 				y = player->y;
 			}
@@ -112,7 +112,7 @@ move_player(struct mapspace *map, struct playerspace *player, struct npc_info np
 	}
 	level = level_up(player);
 	if (level != -1) {
-		sprintf(mesg, "Congratulations! You leveled up to level %d!", level);
+		sprintf(mesg, "Congratulations! You leveled up to level %d! You now have %d skill point(s).", level, player->stats.bp);
 		add_log(mesg);
 	}
 	/* Did they "wait"? */
@@ -270,11 +270,14 @@ update_explored(struct mapspace *map, struct playerspace *player)
 static int
 level_up(struct playerspace *player)
 {
-	int level;
+	int bp, level;
 
 	level = determine_level(player->stats.xp);
 	if (level != player->stats.level) {
+		bp = level - player->stats.level;
 		player->stats.level = level;
+		player->stats.bp += bp;
+		player->stats.hp = player->stats.maxhp;
 		return level;
 	} else {
 		return -1;

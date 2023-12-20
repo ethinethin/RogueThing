@@ -13,8 +13,11 @@ extern void	format_npc_for_saving(int n, char *s);
 extern void	add_loaded_npc(int n_npcs, int n, char name[20], int stats[16]);
 extern int	is_hostile(int n);
 extern int	is_alive(int n);
+extern void	get_npc_stats(int n, int stats[6]);
+extern int	get_level(int n);
 extern void	swap_spaces(struct playerspace *player, int n);
 extern int	kill_enemy(int n);
 extern void	move_all_npcs(struct mapspace *map, struct playerspace *player, struct npc_info npcs);
+extern int	damage_npc(int n, int damage);
 
 #endif

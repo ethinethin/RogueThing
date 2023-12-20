@@ -12,6 +12,10 @@
 #include "types.h"
 
 static void	look_cursor(int cx, int cy);
+static void	character_screen(void);
+static void	change_stat(int *bp, int *stat, int d);
+static void	finalize_changes(struct stats dstats, int bp);
+static void	message_history(void);
 static void	game_startup(int menu);
 static void	game_new(int in_progress);
 static void	game_quit(void);
@@ -101,6 +105,10 @@ main(void)
 			case 'l':
 			case 'L':
 				look_cursor(PLAYER->x, PLAYER->y);
+				break;
+			case 'k':
+			case 'K':
+				character_screen();
 				break;
 			case '<':
 				move_floors(MAP, PLAYER, 1, N_MAPS);
@@ -204,6 +212,116 @@ look_cursor(int cx, int cy)
 }
 
 static void
+character_screen(void)
+{
+	int c, update;
+	struct stats dstats = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+	/* Draw initial screen */
+	update = 1;
+	dstats.bp = PLAYER->stats.bp;
+	while ((c = getch()) != 'b' && c != 'B') {
+		if (update == -1) {
+			break;
+		} else if (update == 1) {
+			draw_charscreen(PLAYER, dstats);
+		}
+		usleep(16667);
+		update = 1;
+		switch (c) {
+			case '1':
+				change_stat(&dstats.bp, &dstats.maxhp, 5);
+				break;
+			case '2':
+				change_stat(&dstats.bp, &dstats.maxhp, -5);
+				break;
+			case '3':
+				change_stat(&dstats.bp, &dstats.maxsp, 5);
+				break;
+			case '4':
+				change_stat(&dstats.bp, &dstats.maxsp, -5);
+				break;
+			case 'q':
+			case 'Q':
+				change_stat(&dstats.bp, &dstats.attack, 1);
+				break;
+			case 'w':
+			case 'W':
+				change_stat(&dstats.bp, &dstats.attack, -1);
+				break;
+			case 'a':
+			case 'A':
+				change_stat(&dstats.bp, &dstats.defense, 1);
+				break;
+			case 's':
+			case 'S':
+				change_stat(&dstats.bp, &dstats.defense, -1);
+				break;
+			case 'z':
+			case 'Z':
+				change_stat(&dstats.bp, &dstats.hit, 1);
+				break;
+			case 'x':
+			case 'X':
+				change_stat(&dstats.bp, &dstats.hit, -1);
+				break;
+			case 'e':
+			case 'E':
+				change_stat(&dstats.bp, &dstats.dodge, 1);
+				break;
+			case 'r':
+			case 'R': 
+				change_stat(&dstats.bp, &dstats.dodge, -1);
+				break;
+			case 'f':
+			case 'F':
+				if (PLAYER->stats.bp != dstats.bp) {
+					finalize_changes(dstats, dstats.bp);
+					update = -1;
+				}
+				break;
+			default:
+				update = 0;
+				break;
+		}
+	}
+	erase();
+}
+
+static void
+change_stat(int *bp, int *stat, int d)
+{
+	if (*bp == 0 && d > 0) return;
+	if (d < 0 && *stat > 0) {
+		*bp += 1;
+		*stat = *stat + d;
+	} else if (d > 0) {
+		*bp -= 1;
+		*stat = *stat + d;
+	}
+}
+
+static void
+finalize_changes(struct stats dstats, int bp)
+{
+	PLAYER->stats.bp = bp;
+	PLAYER->stats.hp += dstats.maxhp;
+	PLAYER->stats.maxhp += dstats.maxhp;
+	PLAYER->stats.sp += dstats.maxsp;
+	PLAYER->stats.maxsp += dstats.maxsp;
+	PLAYER->stats.attack += dstats.attack;
+	PLAYER->stats.defense += dstats.defense;
+	PLAYER->stats.hit += dstats.hit;
+	PLAYER->stats.dodge += dstats.dodge;
+}
+
+static void
+message_history(void)
+{
+}
+
+
+static void
 game_startup(int menu)
 {
 	if (menu == MENU_NEW) {
@@ -244,6 +362,7 @@ game_new(int in_progress)
 	PLAYER = init_playerspace(MAP, MAP->begin[0], MAP->begin[1]);
 	/* Initialize the NPCs */
 	init_npcspace(MAP_WALLET, N_MAPS, 10);
+	character_screen();
 	erase();
 }
 

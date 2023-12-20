@@ -303,6 +303,23 @@ is_alive(int n)
 }
 
 void
+get_npc_stats(int n, int stats[6])
+{
+	stats[0] = (NPCS + n)->stats.hp;
+	stats[1] = (NPCS + n)->stats.sp;
+	stats[2] = (NPCS + n)->stats.attack;
+	stats[3] = (NPCS + n)->stats.defense;
+	stats[4] = (NPCS + n)->stats.hit;
+	stats[5] = (NPCS + n)->stats.dodge;
+}
+
+int
+get_level(int n)
+{
+	return (NPCS + n)->stats.level;
+}
+
+void
 swap_spaces(struct playerspace *player, int n)
 {
 	int tmp_x, tmp_y;
@@ -349,4 +366,12 @@ move_all_npcs(struct mapspace *map, struct playerspace *player, struct npc_info 
 		(NPCS + j)->x = x;
 		(NPCS + j)->y = y;
 	}
+}
+
+int
+damage_npc(int n, int damage)
+{
+	(NPCS + n)->stats.hp -= damage;
+	if ((NPCS + n)->stats.hp < 0) (NPCS + n)->stats.hp = 0;
+	return (NPCS + n)->stats.hp;
 }

@@ -15,6 +15,7 @@ static void	check_window(void);
 static void	init_colors(void);
 static int	cursor_on_npc(int x, int y, struct npc_info npcs);
 static void	format_time(int cur_time, char time_f[20]);
+static void	draw_character_screen_inputs(struct stats dstats);
 static void	scroll_log(int n_lines);
 static void	add_mesg(char *mesg, int n_lines);
 
@@ -133,7 +134,7 @@ draw_commands(int mode)
 	for (i = 0; i < 101; i += 1) addch(' ');
 	/* Output commands at bottom, dependent upon current mode */
 	if (mode == 0) {
-		mvprintw(27, 1, "[M] Main menu      [L] Look mode");
+		mvprintw(27, 1, "[M] Main menu       [L] Look mode       [K] Character screen");
 	} else {
 		mvprintw(27, 1, "[L] Exit Look mode");
 	}
@@ -275,6 +276,60 @@ draw_progress(char *mesg, int x, int y, int progress)
 	for (i = 0; i < progress; i += 1) addch('#');
 	/* Refresh output */
 	refresh();
+}
+
+void
+draw_charscreen(struct playerspace *player, struct stats dstats)
+{
+	erase();
+	move(1, 0);
+	printw(" | Character screen\n");
+	printw(" | ----------------\n");
+	printw(" |  Name: %s\n", player->name);
+	printw(" |  Level: %d\n", player->stats.level);
+	printw(" |  XP: %d\n", player->stats.xp);
+	printw(" |\n");
+	printw(" | Stats: %d skill point(s) available\n", dstats.bp);
+	printw(" | -----------------------------------\n");
+	printw(" |  HP: %d / %d\n", player->stats.hp, player->stats.maxhp);
+	printw(" |  SP: %d / %d\n", player->stats.sp, player->stats.maxsp);
+	printw(" |  Attack: %d\n", player->stats.attack);
+	printw(" |  Defense: %d\n", player->stats.defense);
+	printw(" |  Hit: %d\n", player->stats.hit);
+	printw(" |  Dodge: %d\n", player->stats.dodge);
+	printw(" |\n");
+	printw(" | [B] Back to game\n");
+	printw(" |");
+	draw_character_screen_inputs(dstats);
+}
+
+static void
+draw_character_screen_inputs(struct stats dstats)
+{
+	if (dstats.maxhp > 0) mvprintw(9, 21, "+%d", dstats.maxhp);
+	if (dstats.maxsp > 0) mvprintw(10, 21, "+%d", dstats.maxsp);
+	if (dstats.attack > 0) mvprintw(11, 21, "+%d", dstats.attack);
+	if (dstats.defense > 0) mvprintw(12, 21, "+%d", dstats.defense);
+	if (dstats.hit > 0) mvprintw(13, 21, "+%d", dstats.hit);
+	if (dstats.dodge > 0) mvprintw(14, 21, "+%d", dstats.dodge);
+	if (dstats.maxhp > 0 || dstats.maxsp > 0 || dstats.attack > 0 ||
+	    dstats.defense > 0 || dstats.hit > 0 || dstats.dodge > 0) {
+		mvprintw(16, 24, "[F] Finalize changes");
+	}
+	if (dstats.bp > 0) {
+		mvprintw(9, 27, "[1] increase");
+		mvprintw(10, 27, "[3] increase");
+		mvprintw(11, 27, "[Q] increase");
+		mvprintw(12, 27, "[A] increase");
+		mvprintw(13, 27, "[Z] increase");
+		mvprintw(14, 27, "[E] increase");
+	}
+	if (dstats.maxhp > 0) mvprintw(9, 42, "[2] decrease");
+	if (dstats.maxsp > 0) mvprintw(10, 42, "[4] decrease");
+	if (dstats.attack > 0) mvprintw(11, 42, "[W] decrease");
+	if (dstats.defense > 0) mvprintw(12, 42, "[S] decrease");
+	if (dstats.hit > 0) mvprintw(13, 42, "[X] decrease");
+	if (dstats.dodge > 0) mvprintw(14, 42, "[R] decrease");
 }
 
 /* Internal values for the message log: max length per message line,
